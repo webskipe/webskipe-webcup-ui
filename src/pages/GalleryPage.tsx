@@ -5,85 +5,6 @@ import { Eye, Clock, Search } from 'lucide-react';
 import { fetchUserPages } from '../services/pageService';
 import { UserPage } from '../types/userPage';
 
-// Demo data (would be fetched from API in a real app)
-const demoPages = [
-  {
-    id: 'farewell-dream-corp',
-    title: 'Farewell, Dream Corp!',
-    excerpt: 'After 5 amazing years, it\'s time for me to say goodbye...',
-    author: 'jane_smith',
-    createdAt: '2023-04-10T10:30:00Z',
-    views: 243,
-    reactions: 42,
-    previewImage: 'https://images.pexels.com/photos/7149165/pexels-photo-7149165.jpeg',
-    tone: 'grateful',
-    template: 'celebration',
-  },
-  {
-    id: 'goodbye-new-york',
-    title: 'Goodbye, New York',
-    excerpt: 'The city that never sleeps gave me the best 3 years of my life...',
-    author: 'mike_walker',
-    createdAt: '2023-04-05T14:23:00Z',
-    views: 189,
-    reactions: 35,
-    previewImage: 'https://images.pexels.com/photos/802024/pexels-photo-802024.jpeg',
-    tone: 'nostalgic',
-    template: 'minimal',
-  },
-  {
-    id: 'farewell-college-days',
-    title: 'So Long, College Days',
-    excerpt: 'Four unforgettable years coming to an end...',
-    author: 'samantha',
-    createdAt: '2023-04-02T09:17:00Z',
-    views: 312,
-    reactions: 56,
-    previewImage: 'https://images.pexels.com/photos/267885/pexels-photo-267885.jpeg',
-    tone: 'celebratory',
-    template: 'nostalgic',
-  },
-  {
-    id: 'adios-startup-life',
-    title: 'Adios, Startup Life!',
-    excerpt: 'What a wild ride it has been...',
-    author: 'alex_dev',
-    createdAt: '2023-03-28T16:45:00Z',
-    views: 178,
-    reactions: 29,
-    previewImage: 'https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg',
-    tone: 'humorous',
-    template: 'dramatic',
-  },
-  {
-    id: 'au-revoir-paris',
-    title: 'Au Revoir, Paris',
-    excerpt: 'My year abroad has come to an end...',
-    author: 'emily',
-    createdAt: '2023-03-25T11:39:00Z',
-    views: 207,
-    reactions: 38,
-    previewImage: 'https://images.pexels.com/photos/532826/pexels-photo-532826.jpeg',
-    tone: 'emotional',
-    template: 'nostalgic',
-  },
-  {
-    id: 'leaving-tech-giants',
-    title: 'Leaving Tech Giants Inc.',
-    excerpt: 'After a decade, it\'s time for a new challenge...',
-    author: 'david_tech',
-    createdAt: '2023-03-20T13:15:00Z',
-    views: 421,
-    reactions: 64,
-    previewImage: 'https://images.pexels.com/photos/380769/pexels-photo-380769.jpeg',
-    tone: 'professional',
-    template: 'minimal',
-  },
-];
-
-
-
-// Filter options
 const toneFilters = [
   { value: '', label: 'All Tones' },
   { value: 'grateful', label: 'Grateful' },
@@ -104,8 +25,8 @@ const GalleryPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTone, setSelectedTone] = useState('');
   const [sortBy, setSortBy] = useState('newest');
-  // const [pages, setPages] = useState<UserPage[] | null>(null);
-  // const [loading, setLoading] = useState(true);
+  const [pages, setPages] = useState<UserPage[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -115,34 +36,35 @@ const GalleryPage = () => {
       day: 'numeric',
     });
   };
-  
-  // useEffect(() => {
-  //   const loadPages = async () => {
-  //     try {
-  //       const data = await fetchUserPages();
-  //       setPages(data);
-  //     } catch (error) {
-  //       console.error('Failed to fetch pages:', error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
 
-  //   loadPages();
-  // }, []);
-
-
+  useEffect(() => {
+    const loadPages = async () => {
+      try {
+        const data = await fetchUserPages();
+        setPages(data ?? []);
+      } catch (error) {
+        console.error('Failed to fetch pages:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPages();
+  }, []);
 
   // Filter pages based on search query and tone
-  const filteredPages = demoPages.filter((page) => {
-    const matchesSearch = 
-      searchQuery === '' || 
+  const filteredPages = pages.filter((page) => {
+    const matchesSearch =
+      searchQuery === '' ||
       page.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       page.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesTone = selectedTone === '' || page.tone === selectedTone;
-    
-    return matchesSearch && matchesTone;
+
+    // If you have tone in UserPage, otherwise remove this filter
+    const matchesTone = selectedTone === '' || (page as any).tone === selectedTone;
+
+    // Only show published and public pages
+    const isVisible = page.status === 'published' && page.privacy === 'public';
+
+    return matchesSearch && matchesTone && isVisible;
   });
 
   // Sort pages based on sort option
@@ -159,7 +81,7 @@ const GalleryPage = () => {
     }
   });
 
-  // if (loading) return <p>Loading pages...</p>;
+  if (loading) return <p>Loading pages...</p>;
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -184,7 +106,6 @@ const GalleryPage = () => {
             className="input w-full pl-10"
           />
         </div>
-        
         <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
           <select
             value={selectedTone}
@@ -197,7 +118,6 @@ const GalleryPage = () => {
               </option>
             ))}
           </select>
-          
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -233,29 +153,25 @@ const GalleryPage = () => {
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                  
                   <div className="absolute bottom-0 w-full p-4">
                     <h3 className="mb-1 text-lg font-semibold text-white">
                       {page.title}
                     </h3>
-                    <p className="text-sm text-white/80">by {page.author}</p>
+                    {/* If you have author, display it here */}
                   </div>
                 </div>
-                
                 <div className="p-4">
                   <p className="mb-4 line-clamp-2 text-gray-600 dark:text-gray-400">
                     {page.excerpt}
                   </p>
-                  
                   <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                     <div className="flex items-center space-x-4">
                       <span className="flex items-center">
                         <Eye size={16} className="mr-1" />
                         {page.views}
                       </span>
-                      <span className="capitalize">{page.tone}</span>
+                      {/* If you have tone, display it here */}
                     </div>
-                    
                     <span className="flex items-center">
                       <Clock size={16} className="mr-1" />
                       {formatDate(page.createdAt)}
