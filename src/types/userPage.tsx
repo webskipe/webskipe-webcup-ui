@@ -1,4 +1,4 @@
-// types/Page.ts
+// ...existing code...
 export interface UserPage {
     id: string;
     title: string;
@@ -9,5 +9,5 @@ export interface UserPage {
     previewImage: string;
     status: 'draft' | 'published';
     privacy: 'public' | 'unlisted' | 'private';
+    tone: string;
   }
-  
