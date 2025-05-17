@@ -1,5 +1,5 @@
 // API Configuration
-export const API_URL = 'http://localhost:8000/api';
+export const API_URL = ' https://webskipe.madagascar.webcup.hodi.host/api';
 
 // Templates
 export const TEMPLATES = [
