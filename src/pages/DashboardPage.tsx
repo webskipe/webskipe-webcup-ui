@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Edit, Trash2, Plus, Eye, ExternalLink, MoreHorizontal } from 'lucide-react';
 import Button from '../components/ui/Button';
-import { fetchUserPages } from '../services/pageService';
+import { deletePage, fetchUserPages } from '../services/pageService';
 import { UserPage } from '../types/userPage';
 
 
@@ -33,18 +33,19 @@ const DashboardPage = () => {
     setFilters({me: true});
   };
 
+  const loadPages = async () => {
+    try {
+      const data = await fetchUserPages(filters);
+      console.log('Pages reçues:', data.results);
+      setData(Array.isArray(data.results) ? data.results : []);
+    } catch (error) {
+      console.error('Failed to fetch pages:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadPages = async () => {
-      try {
-        const data = await fetchUserPages(filters);
-        console.log('Pages reçues:', data.results);
-        setData(Array.isArray(data.results) ? data.results : []);
-      } catch (error) {
-        console.error('Failed to fetch pages:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadPages();
     console.log("data", datas);
     console.log("filters", filters);
@@ -62,10 +63,11 @@ const DashboardPage = () => {
 
 
   // // Handle page deletion
-  // const handleDeletePage = (pageId: string) => {
-  //   setUserPages(userPages.filter((page) => page.id !== pageId));
-  //   setShowDeleteConfirm(null);
-  // };
+  const handleDeletePage = (slug: string) => {
+    deletePage(slug).then(() => {
+      loadPages();
+    });
+  };
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -227,7 +229,7 @@ const DashboardPage = () => {
                       <Button
                         variant="accent"
                         size="sm"
-                        // onClick={() => handleDeletePage(data.id)}
+                        onClick={() => handleDeletePage(data.slug)}
                       >
                         Delete
                       </Button>

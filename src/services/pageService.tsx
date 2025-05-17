@@ -17,6 +17,11 @@ export const fetchUserPages = async (filters = {}): Promise<UserPagesResponse> =
   return response.data;
 };
 
+export const deletePage = async (slug: string) => {
+  const response = await axiosInstance.delete(`/pages/${slug}/`);
+  return response.data;
+};
+
 
 export const createPage = async (formData: FormData) => {
   const response = await axiosInstance.post('/pages/', formData);
