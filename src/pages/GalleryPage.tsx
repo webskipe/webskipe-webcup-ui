@@ -14,7 +14,6 @@ const toneFilters = [
   { value: 'emotional', label: 'Emotional' },
   { value: 'professional', label: 'Professional' },
 ];
-
 const sortOptions = [
   { value: 'newest', label: 'Newest First' },
   { value: 'oldest', label: 'Oldest First' },
@@ -37,19 +36,20 @@ const GalleryPage = () => {
     });
   };
 
-  useEffect(() => {
-    const loadPages = async () => {
-      try {
-        const data = await fetchUserPages();
-        setPages(data ?? []);
-      } catch (error) {
-        console.error('Failed to fetch pages:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadPages();
-  }, []);
+useEffect(() => {
+  const loadPages = async () => {
+    try {
+      const data = await fetchUserPages();
+      console.log('Pages reçues:', data.results);
+      setPages(Array.isArray(data.results) ? data.results : []);
+    } catch (error) {
+      console.error('Failed to fetch pages:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  loadPages();
+}, []);
 
   // Filter pages based on search query and tone
   const filteredPages = pages.filter((page) => {
