@@ -22,6 +22,11 @@ export const deletePage = async (slug: string) => {
   return response.data;
 };
 
+export const incrementPageViews = async (slug: string) => {
+  const response = await axiosInstance.post(`/pages/${slug}/increment_view/`);
+  return response.data;
+};
+
 
 export const createPage = async (formData: FormData) => {
   const response = await axiosInstance.post('/pages/', formData);

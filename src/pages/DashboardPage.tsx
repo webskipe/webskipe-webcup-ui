@@ -177,7 +177,7 @@ const DashboardPage = () => {
                   <div className="mt-4 flex items-center space-x-2 sm:mt-0 sm:ml-4">
                     {data.status === 'published' && (
                       <Link
-                        to={`/view/${data.id}`}
+                        to={`/view/${data.slug}`}
                         className="rounded-md bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                         title="View Page"
                       >
