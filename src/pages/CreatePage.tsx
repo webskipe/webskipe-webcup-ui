@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Save } from 'lucide-react';
 import Button from '../components/ui/Button';
 import { TEMPLATES, TONE_OPTIONS, PRIVACY_OPTIONS } from '../config/constants';
+
 
 // Step interfaces
 interface ToneSelection {
@@ -132,6 +133,30 @@ const CreatePage = () => {
     );
   };
   
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>): void {
+    const files = event.target.files;
+    if (!files) return;
+    // Filter files to max 10MB and only images/videos
+    const validFiles: File[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (
+        (file.type.startsWith('image/') || file.type.startsWith('video/')) &&
+        file.size <= 10 * 1024 * 1024
+      ) {
+        validFiles.push(file);
+      }
+    }
+    setContentData((prev) => ({
+      ...prev,
+      media: [...prev.media, ...validFiles],
+    }));
+    // Reset input so same file can be selected again if needed
+    event.target.value = '';
+  }
+
   return (
     <div className="container mx-auto max-w-4xl px-4 py-12">
       <h1 className="mb-6 text-center">Create Your Farewell Page</h1>
@@ -246,13 +271,33 @@ const CreatePage = () => {
                   </svg>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Drag and drop files, or{' '}
-                    <button className="text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
+                    <button
+                      type="button"
+                      className="text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
                       browse
                     </button>
                   </p>
+                  
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Supports images, GIFs, and videos (max 10MB)
                   </p>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,video/*"
+                    ref={fileInputRef}
+                    style={{ display: 'none' }}
+                    onChange={handleFileChange}
+                  />
+                  {contentData.media.length > 0 && (
+                    <div className="mt-2 text-xs text-gray-700 dark:text-gray-200">
+                      {contentData.media.map((file, idx) => (
+                        <div key={idx}>{file.name}</div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
