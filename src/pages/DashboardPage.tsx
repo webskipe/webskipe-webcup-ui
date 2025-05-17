@@ -1,50 +1,56 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Edit, Trash2, Plus, Eye, ExternalLink, MoreHorizontal } from 'lucide-react';
 import Button from '../components/ui/Button';
+import { deletePage, fetchUserPages } from '../services/pageService';
+import { UserPage } from '../types/userPage';
 
-// Demo data (would be fetched from API in a real app)
-const demoUserPages = [
-  {
-    id: 'farewell-dream-corp',
-    title: 'Farewell, Dream Corp!',
-    excerpt: 'After 5 amazing years, it\'s time for me to say goodbye...',
-    createdAt: '2023-04-10T10:30:00Z',
-    views: 243,
-    reactions: 42,
-    previewImage: 'https://images.pexels.com/photos/7149165/pexels-photo-7149165.jpeg',
-    status: 'published',
-    privacy: 'public',
-  },
-  {
-    id: 'goodbye-hiking-group',
-    title: 'Goodbye Hiking Buddies',
-    excerpt: 'Thank you for all the wonderful trails and adventures...',
-    createdAt: '2023-03-15T16:42:00Z',
-    views: 56,
-    reactions: 18,
-    previewImage: 'https://images.pexels.com/photos/554609/pexels-photo-554609.jpeg',
-    status: 'published',
-    privacy: 'unlisted',
-  },
-  {
-    id: 'leaving-apartment',
-    title: 'Moving Day: Goodbye Apartment 5B',
-    excerpt: 'Draft of my goodbye to this amazing apartment...',
-    createdAt: '2023-04-20T09:15:00Z',
-    views: 0,
-    reactions: 0,
-    previewImage: 'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg',
-    status: 'draft',
-    privacy: 'private',
-  },
-];
+
 
 const DashboardPage = () => {
-  const [userPages, setUserPages] = useState(demoUserPages);
   const [activeTab, setActiveTab] = useState('all');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [filters, setFilters] = useState<any>({me: true});
+  const  [datas, setData] = useState<UserPage[]>([]);
+  const [loading, setLoading] = useState(true);
+  // const [pageNumber, setPageNumber] = useState(1);
+  // const [totalPages, setTotalPages] = useState(1);
+  // const [currentPage, setCurrentPage] = useState(1);
+
+  const handlePublishedTab = () => {
+    setActiveTab('published');
+    setFilters({...filters, status: 'published'});
+  };
+
+  const handleDraftsTab = () => {
+    setActiveTab('drafts');
+    setFilters({...filters, status: 'draft'});
+  };
+
+  const handleAllTab = () => {
+    setActiveTab('all');
+    setFilters({me: true});
+  };
+
+  const loadPages = async () => {
+    try {
+      const data = await fetchUserPages(filters);
+      console.log('Pages reçues:', data.results);
+      setData(Array.isArray(data.results) ? data.results : []);
+    } catch (error) {
+      console.error('Failed to fetch pages:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPages();
+    console.log("data", datas);
+    console.log("filters", filters);
+  }, [filters]);
+
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -55,18 +61,12 @@ const DashboardPage = () => {
     });
   };
 
-  // Filter pages based on active tab
-  const filteredPages = userPages.filter((page) => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'published') return page.status === 'published';
-    if (activeTab === 'drafts') return page.status === 'draft';
-    return true;
-  });
 
-  // Handle page deletion
-  const handleDeletePage = (pageId: string) => {
-    setUserPages(userPages.filter((page) => page.id !== pageId));
-    setShowDeleteConfirm(null);
+  // // Handle page deletion
+  const handleDeletePage = (slug: string) => {
+    deletePage(slug).then(() => {
+      loadPages();
+    });
   };
 
   return (
@@ -83,7 +83,7 @@ const DashboardPage = () => {
       <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8">
           <button
-            onClick={() => setActiveTab('all')}
+            onClick={handleAllTab}
             className={`py-4 text-sm font-medium ${
               activeTab === 'all'
                 ? 'border-b-2 border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
@@ -93,7 +93,7 @@ const DashboardPage = () => {
             All
           </button>
           <button
-            onClick={() => setActiveTab('published')}
+            onClick={handlePublishedTab}
             className={`py-4 text-sm font-medium ${
               activeTab === 'published'
                 ? 'border-b-2 border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
@@ -103,7 +103,7 @@ const DashboardPage = () => {
             Published
           </button>
           <button
-            onClick={() => setActiveTab('drafts')}
+            onClick={handleDraftsTab}
             className={`py-4 text-sm font-medium ${
               activeTab === 'drafts'
                 ? 'border-b-2 border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
@@ -117,11 +117,11 @@ const DashboardPage = () => {
 
       {/* Pages list */}
       <div className="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        {filteredPages.length > 0 ? (
+        {datas.length > 0 ? (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {filteredPages.map((page, index) => (
+            {datas.map((data, index) => (
               <motion.div
-                key={page.id}
+                key={data.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2, delay: index * 0.05 }}
@@ -130,26 +130,26 @@ const DashboardPage = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center">
                   <div className="mb-4 mr-4 h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg sm:mb-0">
                     <img
-                      src={page.previewImage}
-                      alt={page.title}
+                      src={data.previewImage}
+                      alt={data.title}
                       className="h-full w-full object-cover"
                     />
                   </div>
                   
                   <div className="flex-grow">
                     <div className="mb-1 flex items-center">
-                      <h3 className="font-medium">{page.title}</h3>
-                      {page.status === 'draft' && (
+                      <h3 className="font-medium">{data.title}</h3>
+                      {data.status === 'draft' && (
                         <span className="ml-2 rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
                           Draft
                         </span>
                       )}
-                      {page.privacy === 'unlisted' && (
+                      {data.privacy === 'unlisted' && (
                         <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                           Unlisted
                         </span>
                       )}
-                      {page.privacy === 'private' && (
+                      {data.privacy === 'private' && (
                         <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                           Private
                         </span>
@@ -157,27 +157,27 @@ const DashboardPage = () => {
                     </div>
                     
                     <p className="mb-2 text-sm text-gray-600 dark:text-gray-400">
-                      {page.excerpt}
+                      {data.excerpt}
                     </p>
                     
                     <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                      <span>Created: {formatDate(page.createdAt)}</span>
-                      {page.status === 'published' && (
+                      <span>Created: {formatDate(data.createdAt)}</span>
+                      {data.status === 'published' && (
                         <>
                           <span className="flex items-center">
                             <Eye size={14} className="mr-1" />
-                            {page.views} views
+                            {data.views} views
                           </span>
-                          <span>{page.reactions} reactions</span>
+                          <span>{data.reactions} reactions</span>
                         </>
                       )}
                     </div>
                   </div>
                   
                   <div className="mt-4 flex items-center space-x-2 sm:mt-0 sm:ml-4">
-                    {page.status === 'published' && (
+                    {data.status === 'published' && (
                       <Link
-                        to={`/view/${page.id}`}
+                        to={`/view/${data.id}`}
                         className="rounded-md bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                         title="View Page"
                       >
@@ -186,7 +186,7 @@ const DashboardPage = () => {
                     )}
                     
                     <Link
-                      to={`/edit/${page.id}`}
+                      to={`/edit/${data.id}`}
                       className="rounded-md bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                       title="Edit Page"
                     >
@@ -194,7 +194,7 @@ const DashboardPage = () => {
                     </Link>
                     
                     <button
-                      onClick={() => setShowDeleteConfirm(page.id)}
+                      onClick={() => setShowDeleteConfirm(data.id)}
                       className="rounded-md bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-error-100 hover:text-error-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-error-900/30 dark:hover:text-error-400"
                       title="Delete Page"
                     >
@@ -213,10 +213,10 @@ const DashboardPage = () => {
                 </div>
                 
                 {/* Delete confirmation */}
-                {showDeleteConfirm === page.id && (
+                {showDeleteConfirm === data.id && (
                   <div className="mt-4 rounded-md bg-error-50 p-4 dark:bg-error-900/20">
                     <p className="mb-3 text-sm text-error-800 dark:text-error-200">
-                      Are you sure you want to delete "{page.title}"? This action cannot be undone.
+                      Are you sure you want to delete "{data.title}"? This action cannot be undone.
                     </p>
                     <div className="flex space-x-3">
                       <Button
@@ -229,7 +229,7 @@ const DashboardPage = () => {
                       <Button
                         variant="accent"
                         size="sm"
-                        onClick={() => handleDeletePage(page.id)}
+                        onClick={() => handleDeletePage(data.slug)}
                       >
                         Delete
                       </Button>

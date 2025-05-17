@@ -10,4 +10,5 @@ export interface UserPage {
     status: 'draft' | 'published';
     privacy: 'public' | 'unlisted' | 'private';
     tone: string;
+    slug: string;
   }
