@@ -10,10 +10,13 @@ type UserPagesResponse = {
   results: UserPage[];
 };
 
-export const fetchUserPages = async (): Promise<UserPagesResponse> => {
-  const response = await axiosInstance.get('/pages/');
+export const fetchUserPages = async (filters = {}): Promise<UserPagesResponse> => {
+  const response = await axiosInstance.get('/pages/', {
+    params: filters,
+  });
   return response.data;
 };
+
 
 export const createPage = async (formData: FormData) => {
   const response = await axiosInstance.post('/pages/', formData);
