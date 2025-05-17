@@ -5,6 +5,8 @@ import { ArrowLeft, ArrowRight, Save } from 'lucide-react';
 import Button from '../components/ui/Button';
 import { TEMPLATES, TONE_OPTIONS, PRIVACY_OPTIONS } from '../config/constants';
 import { createPage } from '../services/pageService';
+import axiosInstance from '../services/axiosInstance';
+
 
 // Step interfaces
 interface ToneSelection {
@@ -98,6 +100,23 @@ const CreatePage = () => {
 
     // Appel API pour créer la page
     const createdPage = await createPage(formData);
+    console.log('createdPage:', createdPage);
+    const slug = createdPage.slug;
+    console.log('Slug:', slug);
+
+for (const file of contentData.media) {
+  if (file.type.startsWith('image/')) {
+    const mediaForm = new FormData();
+    mediaForm.append('file', file);
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    mediaForm.append('file_type', ext);
+
+    await axiosInstance.post(
+      `/pages/${slug}/upload_media/`,
+      mediaForm
+    );
+  }
+}
 
     // Redirige vers la page créée (adapte selon ta route)
     navigate(`./ViewPage/${createdPage.id}`);
