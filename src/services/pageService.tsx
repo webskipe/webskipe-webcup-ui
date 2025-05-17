@@ -1,6 +1,5 @@
 import axiosInstance from './axiosInstance';
 import { UserPage } from '../types/userPage';
-import axios from 'axios';
 
 
 type UserPagesResponse = {
