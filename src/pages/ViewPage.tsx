@@ -192,8 +192,7 @@ const ViewPage = () => {
             <div>
               <p className="font-medium">{page.author.username}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {formatDate(page.create
-dAt)}
+{formatDate(page.createdAt)}
               </p>
             </div>
           </div>
