@@ -1,5 +1,5 @@
 // API Configuration
-export const API_URL = 'http://localhost:8000/api';
+export const API_URL = ' https://webskipe.madagascar.webcup.hodi.host/api';
 
 // Templates
 export const TEMPLATES = [
@@ -41,7 +41,7 @@ export const TONE_OPTIONS = [
   { value: 'poetic', label: 'Poetic' },
 ];
 
-// Privacy Options
+// option priver
 export const PRIVACY_OPTIONS = [
   { value: 'public', label: 'Public (visible to everyone)', icon: 'Globe' },
   { value: 'unlisted', label: 'Unlisted (only accessible via link)', icon: 'Link' },
