@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Save } from 'lucide-react';
 import Button from '../components/ui/Button';
 import { TEMPLATES, TONE_OPTIONS, PRIVACY_OPTIONS } from '../config/constants';
-
+import { createPage } from '../services/pageService';
 
 // Step interfaces
 interface ToneSelection {
@@ -79,24 +79,33 @@ const CreatePage = () => {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
-    try {
-      // Here we would submit the data to the API
-      console.log({
-        ...toneData,
-        ...contentData,
-        ...templateData,
-        ...privacyData,
-      });
-      
-      // Navigate to the created page (use a fake ID for now)
-      setTimeout(() => {
-        navigate('/view/demo-page');
-      }, 1500);
-    } catch (error) {
-      console.error('Error creating page:', error);
-      setIsSubmitting(false);
-    }
-  };
+     try {
+    const formData = new FormData();
+    formData.append('tone', toneData.tone);
+    formData.append('context', toneData.context);
+    formData.append('title', contentData.title);
+    formData.append('message', contentData.message);
+    formData.append('template', templateData.templateId);
+    formData.append('primary_color', templateData.primaryColor);
+    formData.append('background_color', templateData.backgroundColor);
+    formData.append('privacy', privacyData.privacy);
+    formData.append('expiry_Date', privacyData.expiryDate);
+
+    // Ajoute les fichiers médias
+    contentData.media.forEach((file) => {
+      formData.append('media', file);
+    });
+
+    // Appel API pour créer la page
+    const createdPage = await createPage(formData);
+
+    // Redirige vers la page créée (adapte selon ta route)
+    navigate(`./ViewPage/${createdPage.id}`);
+  } catch (error) {
+    console.error('Error creating page:', error);
+    setIsSubmitting(false);
+  }
+};
   
   // Render step indicators
   const renderStepIndicators = () => {
