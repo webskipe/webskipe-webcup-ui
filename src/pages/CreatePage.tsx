@@ -92,6 +92,7 @@ const CreatePage = () => {
     formData.append('background_color', templateData.backgroundColor);
     formData.append('privacy', privacyData.privacy);
     formData.append('expiry_Date', privacyData.expiryDate);
+    formData.append('status', "published");
 
     // Ajoute les fichiers médias
     contentData.media.forEach((file) => {
