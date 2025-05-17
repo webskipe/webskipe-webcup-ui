@@ -41,7 +41,7 @@ export const TONE_OPTIONS = [
   { value: 'poetic', label: 'Poetic' },
 ];
 
-// Privacy Options
+// option priver
 export const PRIVACY_OPTIONS = [
   { value: 'public', label: 'Public (visible to everyone)', icon: 'Globe' },
   { value: 'unlisted', label: 'Unlisted (only accessible via link)', icon: 'Link' },
