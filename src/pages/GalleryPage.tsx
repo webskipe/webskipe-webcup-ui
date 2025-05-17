@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, Clock, Search } from 'lucide-react';
+import { fetchUserPages } from '../services/pageService';
+import { UserPage } from '../types/userPage';
 
 // Demo data (would be fetched from API in a real app)
 const demoPages = [
@@ -79,6 +81,8 @@ const demoPages = [
   },
 ];
 
+
+
 // Filter options
 const toneFilters = [
   { value: '', label: 'All Tones' },
@@ -100,6 +104,8 @@ const GalleryPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTone, setSelectedTone] = useState('');
   const [sortBy, setSortBy] = useState('newest');
+  // const [pages, setPages] = useState<UserPage[] | null>(null);
+  // const [loading, setLoading] = useState(true);
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -109,6 +115,23 @@ const GalleryPage = () => {
       day: 'numeric',
     });
   };
+  
+  // useEffect(() => {
+  //   const loadPages = async () => {
+  //     try {
+  //       const data = await fetchUserPages();
+  //       setPages(data);
+  //     } catch (error) {
+  //       console.error('Failed to fetch pages:', error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   loadPages();
+  // }, []);
+
+
 
   // Filter pages based on search query and tone
   const filteredPages = demoPages.filter((page) => {
@@ -135,6 +158,8 @@ const GalleryPage = () => {
         return 0;
     }
   });
+
+  // if (loading) return <p>Loading pages...</p>;
 
   return (
     <div className="container mx-auto px-4 py-12">
