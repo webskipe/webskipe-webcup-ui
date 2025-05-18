@@ -46,3 +46,11 @@ export const createPage = async (formData: FormData) => {
   const response = await axiosInstance.post('/pages/', formData);
   return response.data;
 };
+
+export const postComment = async (pageId: string | number, content: string) => {
+  const response = await axiosInstance.post('/comments/', {
+    page: pageId,
+    content,
+  });
+  return response.data;
+};

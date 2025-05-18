@@ -6,6 +6,14 @@ import { Heart, Share2, MessageSquare, Copy, Check } from 'lucide-react';
 import Button from '../components/ui/Button';
 import axiosInstance from '../services/axiosInstance';
 import { createComment, filterCommentsByPage, incrementPageViews } from '../services/pageService';
+import DramaticBackground from "../components/backgrounds/dramatic-background"
+import ProfessionalBackground from "../components/backgrounds/professional-background"
+import HumorousBackground from "../components/backgrounds/humorous-background"
+import GratefulBackground from "../components/backgrounds/grateful-background"
+import CelebratoryBackground from "../components/backgrounds/celebratory-background"
+import EmotionalBackground from "../components/backgrounds/emotional-background"
+import PoeticBackground from "../components/backgrounds/poetic-background"
+import ReflectiveBackground from "../components/backgrounds/reflective-background"
 
 
 const ViewPage = () => {
@@ -20,6 +28,30 @@ const ViewPage = () => {
     width: window.innerWidth,
     height: window.innerHeight,
   });
+
+
+  const renderBackground = () => {
+    switch (page?.tone) {
+      case "dramatic":
+        return <DramaticBackground />;
+      case "professional":
+        return <ProfessionalBackground />;
+      case "humorous":
+        return <HumorousBackground />;
+      case "grateful":
+        return <GratefulBackground />;
+      case "celebratory":
+        return <CelebratoryBackground />;
+      case "emotional":
+        return <EmotionalBackground />;
+      case "poetic":
+        return <PoeticBackground />;
+      case "reflective":
+        return <ReflectiveBackground />;
+      default:
+        return <DramaticBackground />;
+    }
+  }
 
   const [comments, setComments] = useState<any[]>([]);
   // Fetch page data from API
@@ -42,6 +74,7 @@ const ViewPage = () => {
             template: data.template,
             primaryColor: data.primary_color || '#6D28D9',
             backgroundColor: data.background_color || '#f8f9fa',
+            previewImage: data.previewImage,
             author: {
               id: data.user.id,
               username: data.user.username,
@@ -67,21 +100,21 @@ const ViewPage = () => {
     fetchPage();
   }, [id]);
 
-const loadComments = async () => {
-  filterCommentsByPage(page.id).then((res) => { 
-    console.log('Comments filtrés:', res);
-    setComments(res);
-  });
+  const loadComments = async () => {
+    filterCommentsByPage(page.id).then((res) => {
+      console.log('Comments filtrés:', res);
+      setComments(res);
+    });
   }
 
 
 
-useEffect(() => {
-  if (!page?.id) return;
-  console.log('page.id:', page.id, 'typeof:', typeof page.id);
-  loadComments(); 
+  useEffect(() => {
+    if (!page?.id) return;
+    console.log('page.id:', page.id, 'typeof:', typeof page.id);
+    loadComments();
     // setComment(res.results[0]);
-}, [page?.id]);
+  }, [page?.id]);
   // Update window dimensions when resized
   useEffect(() => {
     incrementPageViews(id!).then((res) => {
@@ -121,28 +154,28 @@ useEffect(() => {
     // In a real app, send to API
   };
 
-// Handle comment submission
-const handleCommentSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (comment.trim()) {
-    // const newComment = {
-    //   id: Date.now(),
-    //   author: 'You',
-    //   avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg',
-    //   content: comment,
-    //   createdAt: new Date().toISOString(),
-    // };
-    const formData = new FormData();
-    formData.append('page', page.id);
-    formData.append('content', comment);
-    createComment(formData).then((res) => {
-      console.log('Comment créé:', res);
-      setComment(null);
-    });
-    setComment('');
-    loadComments(); 
-  }
-};
+  // Handle comment submission
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (comment.trim()) {
+      // const newComment = {
+      //   id: Date.now(),
+      //   author: 'You',
+      //   avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg',
+      //   content: comment,
+      //   createdAt: new Date().toISOString(),
+      // };
+      const formData = new FormData();
+      formData.append('page', page.id);
+      formData.append('content', comment);
+      createComment(formData).then((res) => {
+        console.log('Comment créé:', res);
+        setComment(null);
+      });
+      setComment('');
+      loadComments();
+    }
+  };
 
   // Handle copy link
   const handleCopyLink = () => {
@@ -153,7 +186,10 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
 
   // Format date
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -184,10 +220,8 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
   }
 
   return (
-    <div
-      className="relative min-h-screen"
-      style={{ backgroundColor: page.backgroundColor }}
-    >
+    <div className="relative min-h-screen">
+      {renderBackground()}
       {showConfetti && (
         <ReactConfetti
           width={windowDimensions.width}
@@ -237,7 +271,24 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
             borderTop: `4px solid ${page.primaryColor}`,
           }}
         >
-          <h1 className="mb-6 text-center text-4xl font-bold" style={{ color: page.primaryColor }}>
+          {page.previewImage && (
+            <div className="mb-6 flex justify-center">
+              <img
+                src={page.previewImage}
+                alt={page.title}
+                className="max-h-80 rounded-lg object-contain shadow"
+              />
+            </div>
+          )}
+          <h1
+            className="mb-6 text-center text-4xl font-bold"
+            style={{
+              // Optionnel : couleur différente en dark mode
+              color: document.documentElement.classList.contains('dark')
+                ? '#fff'
+                : page.primaryColor,
+            }}
+          >
             {page.title}
           </h1>
 
@@ -249,11 +300,10 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
           <div className="mb-8 flex justify-center space-x-4">
             <button
               onClick={() => handleReaction('heart')}
-              className={`flex items-center space-x-1 rounded-full px-4 py-2 transition-colors ${
-                reaction === 'heart'
-                  ? 'bg-accent-100 text-accent-500 dark:bg-accent-900/30'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
+              className={`flex items-center space-x-1 rounded-full px-4 py-2 transition-colors ${reaction === 'heart'
+                ? 'bg-accent-100 text-accent-500 dark:bg-accent-900/30'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
             >
               <Heart className={reaction === 'heart' ? 'fill-accent-500 text-accent-500' : ''} size={20} />
               <span>{page.reactions.hearts}</span>
@@ -288,19 +338,19 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
             <Button
               type="submit"
               variant="primary"
-              // disabled={!comment.trim()}
+            // disabled={!comment.trim()}
             >
               Post Message
             </Button>
           </form>
           <h2 className="mb-4 flex items-center text-xl font-semibold">
-  <MessageSquare className="mr-2" size={20} />
-  Messages ({comments ? comments.length : 0})
-</h2>
+            <MessageSquare className="mr-2" size={20} />
+            Messages ({comments ? comments.length : 0})
+          </h2>
 
-<form onSubmit={handleCommentSubmit} className="mb-6">
-  {/* ... */}
-</form>
+          <form onSubmit={handleCommentSubmit} className="mb-6">
+            {/* ... */}
+          </form>
 
           <div className="space-y-4">
             {comments && comments.map((comment: any) => (
@@ -316,7 +366,7 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
                   />
                   <span className="font-medium">{comment.author}</span>
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {formatDate(comment.createdAt)}
+                    {formatDate(comment.createdAt || comment.created_at || '')}
                   </span>
                 </div>
                 <p>{comment.content}</p>
