@@ -19,6 +19,7 @@ const ViewPage = () => {
     height: window.innerHeight,
   });
 
+  const [comments, setComments] = useState<any[]>([]);
   // Fetch page data from API
   useEffect(() => {
     const fetchPage = async () => {
@@ -32,6 +33,7 @@ const ViewPage = () => {
         } else {
           setPage({
             id: data.id,
+            slug: data.slug,
             title: data.title,
             message: data.message || '',
             tone: data.tone,
@@ -63,6 +65,20 @@ const ViewPage = () => {
     fetchPage();
   }, [id]);
 
+useEffect(() => {
+  if (!page?.id) return;
+  console.log('page.id:', page.id, 'typeof:', typeof page.id);
+  const fetchComments = async () => {
+    try {
+      const res = await axiosInstance.get(`/comments/?page=${page.id}`);
+      console.log('Fetched comments:', res.data); 
+      setComments(res.data.results || []);
+    } catch (e) {
+      setComments([]);
+    }
+  };
+  fetchComments();
+}, [page?.id]);
   // Update window dimensions when resized
   useEffect(() => {
     const handleResize = () => {
@@ -99,24 +115,21 @@ const ViewPage = () => {
     // In a real app, send to API
   };
 
-  // Handle comment submission
-  const handleCommentSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (comment.trim()) {
-      const newComment = {
-        id: Date.now(),
-        author: 'You',
-        avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg',
-        content: comment,
-        createdAt: new Date().toISOString(),
-      };
-      setPage({
-        ...page,
-        comments: [...(page.comments || []), newComment],
-      });
-      setComment('');
-    }
-  };
+// Handle comment submission
+const handleCommentSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (comment.trim()) {
+    const newComment = {
+      id: Date.now(),
+      author: 'You',
+      avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg',
+      content: comment,
+      createdAt: new Date().toISOString(),
+    };
+    setComments([...comments, newComment]); // <-- Ajoute ici
+    setComment('');
+  }
+};
 
   // Handle copy link
   const handleCopyLink = () => {
@@ -250,10 +263,6 @@ const ViewPage = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-8 rounded-xl bg-white p-6 shadow-md dark:bg-gray-800"
         >
-          <h2 className="mb-4 flex items-center text-xl font-semibold">
-            <MessageSquare className="mr-2" size={20} />
-            Messages ({page.comments.length})
-          </h2>
 
           <form onSubmit={handleCommentSubmit} className="mb-6">
             <textarea
@@ -271,6 +280,36 @@ const ViewPage = () => {
               Post Message
             </Button>
           </form>
+          <h2 className="mb-4 flex items-center text-xl font-semibold">
+  <MessageSquare className="mr-2" size={20} />
+  Messages ({comments.length})
+</h2>
+
+<form onSubmit={handleCommentSubmit} className="mb-6">
+  {/* ... */}
+</form>
+
+<div className="space-y-4">
+  {comments.map((comment: any) => (
+    <div
+      key={comment.id}
+      className="rounded-lg border border-gray-200 p-4 dark:border-gray-700"
+    >
+      <div className="mb-2 flex items-center space-x-2">
+        <img
+          src={comment.avatar}
+          alt={comment.author}
+          className="h-8 w-8 rounded-full object-cover"
+        />
+        <span className="font-medium">{comment.author}</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          {formatDate(comment.createdAt)}
+        </span>
+      </div>
+      <p>{comment.content}</p>
+    </div>
+  ))}
+</div>
 
           <div className="space-y-4">
             {page.comments.map((comment: any) => (
