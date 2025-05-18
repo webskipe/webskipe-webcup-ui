@@ -5,9 +5,10 @@ import ReactConfetti from 'react-confetti';
 import { Heart, Share2, MessageSquare, Copy, Check } from 'lucide-react';
 import Button from '../components/ui/Button';
 import axiosInstance from '../services/axiosInstance';
+import { incrementPageViews } from '../services/pageService';
 
 const ViewPage = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>(); // id est le slug de la page
   const [page, setPage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(true);
@@ -27,7 +28,7 @@ const ViewPage = () => {
       try {
         const res = await axiosInstance.get('/pages/');
         const results = res.data.results || [];
-        const data = results.find((p: any) => String(p.id) === String(id));
+        const data = results.find((p: any) => String(p.slug) === String(id));
         if (!data) {
           setPage(null);
         } else {
@@ -81,6 +82,9 @@ useEffect(() => {
 }, [page?.id]);
   // Update window dimensions when resized
   useEffect(() => {
+    incrementPageViews(id!).then((res) => {
+      console.log('Page vues incrémentées:', res);
+    });
     const handleResize = () => {
       setWindowDimensions({
         width: window.innerWidth,
