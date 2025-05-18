@@ -92,7 +92,7 @@ const CreatePage = () => {
     formData.append('primary_color', templateData.primaryColor);
     formData.append('background_color', templateData.backgroundColor);
     formData.append('privacy', privacyData.privacy);
-    formData.append('expiry_Date', privacyData.expiryDate);
+    formData.append('expiry_date', privacyData.expiryDate);
     formData.append('status', "published");
 
     // Ajoute les fichiers médias
@@ -121,7 +121,7 @@ for (const file of contentData.media) {
 }
 
     // Redirige vers la page créée (adapte selon ta route)
-    navigate(`./ViewPage/${createdPage.id}`);
+    navigate(`./ViewPage/${createdPage.slug}`);
   } catch (error) {
     console.error('Error creating page:', error);
     setIsSubmitting(false);
