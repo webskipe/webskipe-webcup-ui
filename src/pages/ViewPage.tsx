@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ReactConfetti from 'react-confetti';
-import { Heart, Share2, MessageSquare, Copy, Check } from 'lucide-react';
+import { Heart, Share2, MessageSquare, Copy, Check, ThumbsUp, Laugh, Frown } from 'lucide-react';
 import Button from '../components/ui/Button';
 import axiosInstance from '../services/axiosInstance';
-import { createComment, filterCommentsByPage, incrementPageViews } from '../services/pageService';
+import { createComment, filterCommentsByPage, getMyReactions, incrementPageViews, postReactions } from '../services/pageService';
+import ReactionButtons, { ReactionType } from '../components/reactionButton';
 
 
 const ViewPage = () => {
@@ -13,16 +14,36 @@ const ViewPage = () => {
   const [page, setPage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(true);
-  const [reaction, setReaction] = useState<string | null>(null);
+  const [reaction, setReaction] = useState<ReactionType | undefined>(undefined);
   const [comment, setComment] = useState<any>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [windowDimensions, setWindowDimensions] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
   });
+  const [reactionData, setReactionData] = useState<any>(null);
 
   const [comments, setComments] = useState<any[]>([]);
   // Fetch page data from API
+
+  const fetchReactions = async () => {
+    await axiosInstance.get(`/pages/${page?.id}/reactions-summary`).then(
+      (res) => {
+        console.log('Reactions:', res.data);
+        setReactionData(res.data);
+      }
+    );
+    // console.log('Reactions:', res.data);
+    
+  };
+
+  const handleReaction = async (type: string) => {
+    await postReactions(page.id, type).then((res) => {
+      console.log('Reaction postée:', res);
+    });
+  };
+
+  
   useEffect(() => {
     const fetchPage = async () => {
       setLoading(true);
@@ -74,13 +95,20 @@ const loadComments = async () => {
   });
   }
 
+useEffect(() => {
+  if (!page?.id) return;
 
+  getMyReactions(page.id).then((res) => {
+    console.log('My reactions:', res);
+    setReaction(res?.reactions[0]);
+  });
+}, [page?.id]);
 
 useEffect(() => {
   if (!page?.id) return;
   console.log('page.id:', page.id, 'typeof:', typeof page.id);
   loadComments(); 
-    // setComment(res.results[0]);
+  // setComment(res.results[0]);
 }, [page?.id]);
   // Update window dimensions when resized
   useEffect(() => {
@@ -99,10 +127,7 @@ useEffect(() => {
 
   // Stop confetti after 5 seconds
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowConfetti(false);
-    }, 5000);
-    return () => clearTimeout(timer);
+    fetchReactions();
   }, []);
 
   // Reset "copied" status after 2 seconds
@@ -116,10 +141,6 @@ useEffect(() => {
   }, [linkCopied]);
 
   // Handle reaction
-  const handleReaction = (type: string) => {
-    setReaction(type);
-    // In a real app, send to API
-  };
 
 // Handle comment submission
 const handleCommentSubmit = async (e: React.FormEvent) => {
@@ -246,8 +267,13 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
           </div>
 
           {/* Reactions */}
-          <div className="mb-8 flex justify-center space-x-4">
-            <button
+          <div className="mb-8 flex justify-between">
+          <ReactionButtons
+            reactions={reactionData}
+            onReact={(type) => handleReaction(type)}
+            userReaction={reaction}
+          />
+            {/* <button
               onClick={() => handleReaction('heart')}
               className={`flex items-center space-x-1 rounded-full px-4 py-2 transition-colors ${
                 reaction === 'heart'
@@ -257,7 +283,7 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
             >
               <Heart className={reaction === 'heart' ? 'fill-accent-500 text-accent-500' : ''} size={20} />
               <span>{page.reactions.hearts}</span>
-            </button>
+            </button> */}
 
             <button
               onClick={() => handleReaction('share')}
