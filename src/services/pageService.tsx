@@ -26,6 +26,21 @@ export const incrementPageViews = async (slug: string) => {
   return response.data;
 };
 
+export const fetchOnePage = async (slug: string) => {
+  const response = await axiosInstance.get(`/pages/${slug}/`);
+  return response.data;
+};
+
+export const filterCommentsByPage = async (pageId: string) => {
+  const response = await axiosInstance.get(`/comments/byPage/${pageId}`);
+  return response.data;
+};
+
+export const createComment = async (formData: FormData) => {
+  const response = await axiosInstance.post('/comments/', formData);
+  return response.data;
+};
+
 
 export const createPage = async (formData: FormData) => {
   const response = await axiosInstance.post('/pages/', formData);

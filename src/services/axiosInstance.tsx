@@ -2,6 +2,8 @@
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 import { API_URL } from '../config/constants';
+import { Navigate } from 'react-router-dom';
+import { goTo } from '../navigation';
 
 // const API_BASE_URL = 'https://your-api.com/api'; // Change ceci selon ton backend
 
@@ -27,7 +29,8 @@ axiosInstance.interceptors.response.use(
       // Token invalide ou accès interdit
       useAuthStore.getState().logout(); // déconnecte l'utilisateur
       // Optionnel : rediriger vers la page de login
-      window.location.href = '/login'; 
+      goTo('/login');
+      // <Navigate to="/login" replace />;; 
     }
     return Promise.reject(error);
   }
