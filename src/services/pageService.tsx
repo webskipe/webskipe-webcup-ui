@@ -47,23 +47,10 @@ export const createPage = async (formData: FormData) => {
   return response.data;
 };
 
-export const fetchReactionsCount = async (pageId: string) => {
-  const response = await axiosInstance.get(`/pages/${pageId}/reactions-summary`);
-  return response.data;
-};
-
-// localhost:8000/api/reactions/
-
-export const postReactions = async (page: string, reaction_type: string) => {
-  const response = await axiosInstance.post(`/reactions/toggle/`, {
-    page,
-    reaction_type
+export const postComment = async (pageId: string | number, content: string) => {
+  const response = await axiosInstance.post('/comments/', {
+    page: pageId,
+    content,
   });
-  return response.data;
-};
-
-
-export const getMyReactions = async (pageId: string) => {
-  const response = await axiosInstance.get(`/reactions/my_reactions?page=${pageId}`);
   return response.data;
 };
