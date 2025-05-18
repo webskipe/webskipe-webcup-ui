@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Save } from 'lucide-react';
 import Button from '../components/ui/Button';
 import { TEMPLATES, TONE_OPTIONS, PRIVACY_OPTIONS } from '../config/constants';
-import { createPage } from '../services/pageService';
+import { createPage, fetchOnePage } from '../services/pageService';
 import axiosInstance from '../services/axiosInstance';
+import { UserPage } from '../types/userPage';
 
 
 // Step interfaces
@@ -34,6 +35,7 @@ interface PrivacySettings {
 
 const CreatePage = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string | undefined }>();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -126,6 +128,18 @@ for (const file of contentData.media) {
     setIsSubmitting(false);
   }
 };
+
+// const [dataEdit, setDataEdit] = useState<UserPage | null>(null);
+if (id) {
+  fetchOnePage(id).then((res) => {
+  const data = res.data;
+  console.log('data', data);
+  setToneData({tone: data.tone, context: data.message});
+  setContentData({title: data.title, message: data.message, media: data.media});
+  setTemplateData({templateId: data.template, primaryColor: data.primary_color, backgroundColor: data.background_color});
+  setPrivacyData({privacy: data.privacy, customUrl: data.slug, expiryDate: data.expiry_date});
+  });
+}
   
   // Render step indicators
   const renderStepIndicators = () => {

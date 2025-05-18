@@ -5,7 +5,8 @@ import ReactConfetti from 'react-confetti';
 import { Heart, Share2, MessageSquare, Copy, Check } from 'lucide-react';
 import Button from '../components/ui/Button';
 import axiosInstance from '../services/axiosInstance';
-import { incrementPageViews } from '../services/pageService';
+import { createComment, filterCommentsByPage, incrementPageViews } from '../services/pageService';
+
 
 const ViewPage = () => {
   const { id } = useParams<{ id: string }>(); // id est le slug de la page
@@ -13,7 +14,7 @@ const ViewPage = () => {
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(true);
   const [reaction, setReaction] = useState<string | null>(null);
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState<any>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [windowDimensions, setWindowDimensions] = useState({
     width: window.innerWidth,
@@ -66,19 +67,20 @@ const ViewPage = () => {
     fetchPage();
   }, [id]);
 
+const loadComments = async () => {
+  filterCommentsByPage(page.id).then((res) => { 
+    console.log('Comments filtrés:', res);
+    setComments(res);
+  });
+  }
+
+
+
 useEffect(() => {
   if (!page?.id) return;
   console.log('page.id:', page.id, 'typeof:', typeof page.id);
-  const fetchComments = async () => {
-    try {
-      const res = await axiosInstance.get(`/comments/?page=${page.id}`);
-      console.log('Fetched comments:', res.data); 
-      setComments(res.data.results || []);
-    } catch (e) {
-      setComments([]);
-    }
-  };
-  fetchComments();
+  loadComments(); 
+    // setComment(res.results[0]);
 }, [page?.id]);
   // Update window dimensions when resized
   useEffect(() => {
@@ -123,15 +125,22 @@ useEffect(() => {
 const handleCommentSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   if (comment.trim()) {
-    const newComment = {
-      id: Date.now(),
-      author: 'You',
-      avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg',
-      content: comment,
-      createdAt: new Date().toISOString(),
-    };
-    setComments([...comments, newComment]); // <-- Ajoute ici
+    // const newComment = {
+    //   id: Date.now(),
+    //   author: 'You',
+    //   avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg',
+    //   content: comment,
+    //   createdAt: new Date().toISOString(),
+    // };
+    const formData = new FormData();
+    formData.append('page', page.id);
+    formData.append('content', comment);
+    createComment(formData).then((res) => {
+      console.log('Comment créé:', res);
+      setComment(null);
+    });
     setComment('');
+    loadComments(); 
   }
 };
 
@@ -279,52 +288,30 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
             <Button
               type="submit"
               variant="primary"
-              disabled={!comment.trim()}
+              // disabled={!comment.trim()}
             >
               Post Message
             </Button>
           </form>
           <h2 className="mb-4 flex items-center text-xl font-semibold">
   <MessageSquare className="mr-2" size={20} />
-  Messages ({comments.length})
+  Messages ({comments ? comments.length : 0})
 </h2>
 
 <form onSubmit={handleCommentSubmit} className="mb-6">
   {/* ... */}
 </form>
 
-<div className="space-y-4">
-  {comments.map((comment: any) => (
-    <div
-      key={comment.id}
-      className="rounded-lg border border-gray-200 p-4 dark:border-gray-700"
-    >
-      <div className="mb-2 flex items-center space-x-2">
-        <img
-          src={comment.avatar}
-          alt={comment.author}
-          className="h-8 w-8 rounded-full object-cover"
-        />
-        <span className="font-medium">{comment.author}</span>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
-          {formatDate(comment.createdAt)}
-        </span>
-      </div>
-      <p>{comment.content}</p>
-    </div>
-  ))}
-</div>
-
           <div className="space-y-4">
-            {page.comments.map((comment: any) => (
+            {comments && comments.map((comment: any) => (
               <div
                 key={comment.id}
                 className="rounded-lg border border-gray-200 p-4 dark:border-gray-700"
               >
                 <div className="mb-2 flex items-center space-x-2">
                   <img
-                    src={comment.avatar}
-                    alt={comment.author}
+                    src={comment.user.avatar}
+                    alt={comment.user.username}
                     className="h-8 w-8 rounded-full object-cover"
                   />
                   <span className="font-medium">{comment.author}</span>
