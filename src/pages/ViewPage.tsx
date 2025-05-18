@@ -6,6 +6,7 @@ import { Heart, Share2, MessageSquare, Copy, Check } from 'lucide-react';
 import Button from '../components/ui/Button';
 import axiosInstance from '../services/axiosInstance';
 import { incrementPageViews } from '../services/pageService';
+import { postComment } from '../services/pageService';
 
 const ViewPage = () => {
   const { id } = useParams<{ id: string }>(); // id est le slug de la page
@@ -41,6 +42,7 @@ const ViewPage = () => {
             template: data.template,
             primaryColor: data.primary_color || '#6D28D9',
             backgroundColor: data.background_color || '#f8f9fa',
+            previewImage: data.previewImage,
             author: {
               id: data.user.id,
               username: data.user.username,
@@ -66,20 +68,20 @@ const ViewPage = () => {
     fetchPage();
   }, [id]);
 
-useEffect(() => {
-  if (!page?.id) return;
-  console.log('page.id:', page.id, 'typeof:', typeof page.id);
-  const fetchComments = async () => {
-    try {
-      const res = await axiosInstance.get(`/comments/?page=${page.id}`);
-      console.log('Fetched comments:', res.data); 
-      setComments(res.data.results || []);
-    } catch (e) {
-      setComments([]);
-    }
-  };
-  fetchComments();
-}, [page?.id]);
+  useEffect(() => {
+    if (!page?.id) return;
+    console.log('page.id:', page.id, 'typeof:', typeof page.id);
+    const fetchComments = async () => {
+      try {
+        const res = await axiosInstance.get(`/comments/?page=${page.id}`);
+        console.log('Fetched comments:', res.data);
+        setComments(res.data.results || []);
+      } catch (e) {
+        setComments([]);
+      }
+    };
+    fetchComments();
+  }, [page?.id]);
   // Update window dimensions when resized
   useEffect(() => {
     incrementPageViews(id!).then((res) => {
@@ -119,21 +121,21 @@ useEffect(() => {
     // In a real app, send to API
   };
 
-// Handle comment submission
-const handleCommentSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (comment.trim()) {
-    const newComment = {
-      id: Date.now(),
-      author: 'You',
-      avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg',
-      content: comment,
-      createdAt: new Date().toISOString(),
-    };
-    setComments([...comments, newComment]); // <-- Ajoute ici
-    setComment('');
-  }
-};
+  // Handle comment submission
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (comment.trim() && page?.id) {
+      try {
+        const newComment = await postComment(page.id, comment);
+        setComments([...comments, newComment]);
+        setComment('');
+
+      } catch (error) {
+        // Gère l'erreur (affiche un message, etc.)
+        alert("Erreur lors de l'envoi du commentaire.");
+      }
+    }
+  };
 
   // Handle copy link
   const handleCopyLink = () => {
@@ -144,7 +146,10 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
 
   // Format date
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -176,8 +181,7 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
 
   return (
     <div
-      className="relative min-h-screen"
-      style={{ backgroundColor: page.backgroundColor }}
+      className="relative min-h-screen bg-gray-90 dark:bg-gray-900"
     >
       {showConfetti && (
         <ReactConfetti
@@ -228,7 +232,24 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
             borderTop: `4px solid ${page.primaryColor}`,
           }}
         >
-          <h1 className="mb-6 text-center text-4xl font-bold" style={{ color: page.primaryColor }}>
+          {page.previewImage && (
+            <div className="mb-6 flex justify-center">
+              <img
+                src={page.previewImage}
+                alt={page.title}
+                className="max-h-80 rounded-lg object-contain shadow"
+              />
+            </div>
+          )}
+          <h1
+            className="mb-6 text-center text-4xl font-bold"
+            style={{
+              // Optionnel : couleur différente en dark mode
+              color: document.documentElement.classList.contains('dark')
+                ? '#fff'
+                : page.primaryColor,
+            }}
+          >
             {page.title}
           </h1>
 
@@ -240,11 +261,10 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
           <div className="mb-8 flex justify-center space-x-4">
             <button
               onClick={() => handleReaction('heart')}
-              className={`flex items-center space-x-1 rounded-full px-4 py-2 transition-colors ${
-                reaction === 'heart'
-                  ? 'bg-accent-100 text-accent-500 dark:bg-accent-900/30'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
+              className={`flex items-center space-x-1 rounded-full px-4 py-2 transition-colors ${reaction === 'heart'
+                ? 'bg-accent-100 text-accent-500 dark:bg-accent-900/30'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
             >
               <Heart className={reaction === 'heart' ? 'fill-accent-500 text-accent-500' : ''} size={20} />
               <span>{page.reactions.hearts}</span>
@@ -285,35 +305,35 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
             </Button>
           </form>
           <h2 className="mb-4 flex items-center text-xl font-semibold">
-  <MessageSquare className="mr-2" size={20} />
-  Messages ({comments.length})
-</h2>
+            <MessageSquare className="mr-2" size={20} />
+            Messages ({comments.length})
+          </h2>
 
-<form onSubmit={handleCommentSubmit} className="mb-6">
-  {/* ... */}
-</form>
+          <form onSubmit={handleCommentSubmit} className="mb-6">
+            {/* ... */}
+          </form>
 
-<div className="space-y-4">
-  {comments.map((comment: any) => (
-    <div
-      key={comment.id}
-      className="rounded-lg border border-gray-200 p-4 dark:border-gray-700"
-    >
-      <div className="mb-2 flex items-center space-x-2">
-        <img
-          src={comment.avatar}
-          alt={comment.author}
-          className="h-8 w-8 rounded-full object-cover"
-        />
-        <span className="font-medium">{comment.author}</span>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
-          {formatDate(comment.createdAt)}
-        </span>
-      </div>
-      <p>{comment.content}</p>
-    </div>
-  ))}
-</div>
+          <div className="space-y-4">
+            {comments.map((comment: any) => (
+              <div
+                key={comment.id}
+                className="rounded-lg border border-gray-200 p-4 dark:border-gray-700"
+              >
+                <div className="mb-2 flex items-center space-x-2">
+                  <img
+                    src={comment.avatar}
+                    alt={comment.author}
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                  <span className="font-medium">{comment.author}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {formatDate(comment.createdAt || comment.created_at || '')}
+                  </span>
+                </div>
+                <p>{comment.content}</p>
+              </div>
+            ))}
+          </div>
 
           <div className="space-y-4">
             {page.comments.map((comment: any) => (
@@ -329,7 +349,7 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
                   />
                   <span className="font-medium">{comment.author}</span>
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {formatDate(comment.createdAt)}
+                    {formatDate(comment.createdAt || comment.created_at || '')}
                   </span>
                 </div>
                 <p>{comment.content}</p>

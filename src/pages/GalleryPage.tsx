@@ -143,7 +143,7 @@ useEffect(() => {
               transition={{ duration: 0.3, delay: index * 0.1 }}
             >
               <Link
-                to={`/view/${page.id}`}
+                to={`/view/${page.slug}`}
                 className="group block overflow-hidden rounded-lg bg-white shadow-md transition-shadow hover:shadow-lg dark:bg-gray-800"
               >
                 <div className="relative h-48 overflow-hidden">
