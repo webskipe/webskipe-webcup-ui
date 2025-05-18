@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Lightbulb as LightBulb } from 'lucide-react';
 import Layout from './components/layout/Layout';
 import HomePage from './pages/HomePage';
@@ -12,10 +12,16 @@ import RegisterPage from './pages/RegisterPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { useThemeStore } from './stores/themeStore';
+import { setNavigator } from './navigation';
 
 function App() {
   const { theme, toggleTheme } = useThemeStore();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setNavigator(navigate);
+  }, [navigate]);
 
   // Apply theme class to body
   useEffect(() => {
