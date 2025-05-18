@@ -6,6 +6,14 @@ import { Heart, Share2, MessageSquare, Copy, Check } from 'lucide-react';
 import Button from '../components/ui/Button';
 import axiosInstance from '../services/axiosInstance';
 import { createComment, filterCommentsByPage, incrementPageViews } from '../services/pageService';
+import DramaticBackground from "../components/backgrounds/dramatic-background"
+import ProfessionalBackground from "../components/backgrounds/professional-background"
+import HumorousBackground from "../components/backgrounds/humorous-background"
+import GratefulBackground from "../components/backgrounds/grateful-background"
+import CelebratoryBackground from "../components/backgrounds/celebratory-background"
+import EmotionalBackground from "../components/backgrounds/emotional-background"
+import PoeticBackground from "../components/backgrounds/poetic-background"
+import ReflectiveBackground from "../components/backgrounds/reflective-background"
 
 
 const ViewPage = () => {
@@ -20,6 +28,30 @@ const ViewPage = () => {
     width: window.innerWidth,
     height: window.innerHeight,
   });
+
+
+  const renderBackground = () => {
+    switch (page?.tone) {
+      case "dramatic":
+        return <DramaticBackground />;
+      case "professional":
+        return <ProfessionalBackground />;
+      case "humorous":
+        return <HumorousBackground />;
+      case "grateful":
+        return <GratefulBackground />;
+      case "celebratory":
+        return <CelebratoryBackground />;
+      case "emotional":
+        return <EmotionalBackground />;
+      case "poetic":
+        return <PoeticBackground />;
+      case "reflective":
+        return <ReflectiveBackground />;
+      default:
+        return <DramaticBackground />;
+    }
+  }
 
   const [comments, setComments] = useState<any[]>([]);
   // Fetch page data from API
@@ -68,21 +100,21 @@ const ViewPage = () => {
     fetchPage();
   }, [id]);
 
-const loadComments = async () => {
-  filterCommentsByPage(page.id).then((res) => { 
-    console.log('Comments filtrés:', res);
-    setComments(res);
-  });
+  const loadComments = async () => {
+    filterCommentsByPage(page.id).then((res) => {
+      console.log('Comments filtrés:', res);
+      setComments(res);
+    });
   }
 
 
 
-useEffect(() => {
-  if (!page?.id) return;
-  console.log('page.id:', page.id, 'typeof:', typeof page.id);
-  loadComments(); 
+  useEffect(() => {
+    if (!page?.id) return;
+    console.log('page.id:', page.id, 'typeof:', typeof page.id);
+    loadComments();
     // setComment(res.results[0]);
-}, [page?.id]);
+  }, [page?.id]);
   // Update window dimensions when resized
   useEffect(() => {
     incrementPageViews(id!).then((res) => {
@@ -122,28 +154,28 @@ useEffect(() => {
     // In a real app, send to API
   };
 
-// Handle comment submission
-const handleCommentSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (comment.trim()) {
-    // const newComment = {
-    //   id: Date.now(),
-    //   author: 'You',
-    //   avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg',
-    //   content: comment,
-    //   createdAt: new Date().toISOString(),
-    // };
-    const formData = new FormData();
-    formData.append('page', page.id);
-    formData.append('content', comment);
-    createComment(formData).then((res) => {
-      console.log('Comment créé:', res);
-      setComment(null);
-    });
-    setComment('');
-    loadComments(); 
-  }
-};
+  // Handle comment submission
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (comment.trim()) {
+      // const newComment = {
+      //   id: Date.now(),
+      //   author: 'You',
+      //   avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg',
+      //   content: comment,
+      //   createdAt: new Date().toISOString(),
+      // };
+      const formData = new FormData();
+      formData.append('page', page.id);
+      formData.append('content', comment);
+      createComment(formData).then((res) => {
+        console.log('Comment créé:', res);
+        setComment(null);
+      });
+      setComment('');
+      loadComments();
+    }
+  };
 
   // Handle copy link
   const handleCopyLink = () => {
@@ -188,9 +220,8 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
   }
 
   return (
-    <div
-      className="relative min-h-screen bg-gray-90 dark:bg-gray-900"
-    >
+    <div className="relative min-h-screen">
+      {renderBackground()}
       {showConfetti && (
         <ReactConfetti
           width={windowDimensions.width}
@@ -307,15 +338,15 @@ const handleCommentSubmit = async (e: React.FormEvent) => {
             <Button
               type="submit"
               variant="primary"
-              // disabled={!comment.trim()}
+            // disabled={!comment.trim()}
             >
               Post Message
             </Button>
           </form>
           <h2 className="mb-4 flex items-center text-xl font-semibold">
-  <MessageSquare className="mr-2" size={20} />
-  Messages ({comments ? comments.length : 0})
-</h2>
+            <MessageSquare className="mr-2" size={20} />
+            Messages ({comments ? comments.length : 0})
+          </h2>
 
           <form onSubmit={handleCommentSubmit} className="mb-6">
             {/* ... */}
