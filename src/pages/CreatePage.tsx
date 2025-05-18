@@ -6,7 +6,6 @@ import Button from '../components/ui/Button';
 import { TEMPLATES, TONE_OPTIONS, PRIVACY_OPTIONS } from '../config/constants';
 import { createPage, fetchOnePage } from '../services/pageService';
 import axiosInstance from '../services/axiosInstance';
-import { UserPage } from '../types/userPage';
 
 
 // Step interfaces
