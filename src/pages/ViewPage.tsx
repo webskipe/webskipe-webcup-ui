@@ -8,6 +8,7 @@ import { motion } from "framer-motion"
 import ReactConfetti from "react-confetti"
 import { Heart, Share2, MessageSquare, Copy, Check } from "lucide-react"
 import Button from "../components/ui/Button"
+import Avatar from "../components/Avatar"
 import axiosInstance from "../services/axiosInstance"
 import { createComment, filterCommentsByPage, incrementPageViews } from "../services/pageService"
 import DramaticBackground from "../components/backgrounds/dramatic-background"
@@ -20,18 +21,17 @@ import PoeticBackground from "../components/backgrounds/poetic-background"
 import ReflectiveBackground from "../components/backgrounds/reflective-background"
 
 const ViewPage = () => {
-  const { id } = useParams<{ id: string }>() // id is the page slug
+  const { id } = useParams<{ id: string }>() // id est le slug de la page
   const [page, setPage] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [showConfetti, setShowConfetti] = useState(true)
   const [reaction, setReaction] = useState<string | null>(null)
-  const [comment, setComment] = useState<string>("")
+  const [comment, setComment] = useState<any>(null)
   const [linkCopied, setLinkCopied] = useState(false)
   const [windowDimensions, setWindowDimensions] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
   })
-  const [comments, setComments] = useState<any[]>([])
 
   const renderBackground = () => {
     switch (page?.tone) {
@@ -56,18 +56,18 @@ const ViewPage = () => {
     }
   }
 
+  const [comments, setComments] = useState<any[]>([])
   // Fetch page data from API
   useEffect(() => {
     const fetchPage = async () => {
-      if (!id) return
-
       setLoading(true)
       try {
-        const res = await axiosInstance.get(`/pages/${id}/`)
-        if (!res.data) {
+        const res = await axiosInstance.get("/pages/")
+        const results = res.data.results || []
+        const data = results.find((p: any) => String(p.slug) === String(id))
+        if (!data) {
           setPage(null)
         } else {
-          const data = res.data
           setPage({
             id: data.id,
             slug: data.slug,
@@ -77,13 +77,13 @@ const ViewPage = () => {
             template: data.template,
             primaryColor: data.primary_color || "#6D28D9",
             backgroundColor: data.background_color || "#f8f9fa",
-            previewImage: data.preview_image || "",
+            previewImage: data.previewImage,
             author: {
-              id: data.user?.id,
-              username: data.user?.username || "Anonymous",
-              avatar:
-                data.user?.avatar ||
-                `https://ui-avatars.com/api/?name=${data.user?.username || "Anonymous"}&background=random`,
+              id: data.user.id,
+              username: data.user.username,
+              avatar: data.user.avatar
+                ? data.user.avatar
+                : `https://webskipe.madagascar.webcup.hodi.host/pages/${data.user.username}`,
             },
             createdAt: data.created_at,
             reactions: {
@@ -91,49 +91,42 @@ const ViewPage = () => {
               likes: 0,
               claps: 0,
             },
-            comments: [], // Will be filled separately
+            comments: [], // À remplir si tu as les commentaires
           })
-
-          // Increment page views
-          incrementPageViews(id).catch(console.error)
         }
       } catch (e) {
-        console.error("Error fetching page:", e)
         setPage(null)
       } finally {
         setLoading(false)
       }
     }
-
     fetchPage()
   }, [id])
 
   const loadComments = async () => {
-    if (!page?.id) return
-
-    try {
-      const comments = await filterCommentsByPage(page.id)
-      setComments(Array.isArray(comments) ? comments : [])
-    } catch (error) {
-      console.error("Error loading comments:", error)
-      setComments([])
-    }
+    filterCommentsByPage(page.id).then((res) => {
+      console.log("Comments filtrés:", res)
+      setComments(res)
+    })
   }
 
   useEffect(() => {
     if (!page?.id) return
+    console.log("page.id:", page.id, "typeof:", typeof page.id)
     loadComments()
+    // setComment(res.results[0]);
   }, [page?.id])
-
   // Update window dimensions when resized
   useEffect(() => {
+    incrementPageViews(id!).then((res) => {
+      console.log("Page vues incrémentées:", res)
+    })
     const handleResize = () => {
       setWindowDimensions({
         width: window.innerWidth,
         height: window.innerHeight,
       })
     }
-
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
   }, [])
@@ -165,19 +158,23 @@ const ViewPage = () => {
   // Handle comment submission
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!comment.trim() || !page?.id) return
-
-    try {
+    if (comment.trim()) {
+      // const newComment = {
+      //   id: Date.now(),
+      //   author: 'You',
+      //   avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg',
+      //   content: comment,
+      //   createdAt: new Date().toISOString(),
+      // };
       const formData = new FormData()
       formData.append("page", page.id)
       formData.append("content", comment)
-
-      await createComment(formData)
+      createComment(formData).then((res) => {
+        console.log("Comment créé:", res)
+        setComment(null)
+      })
       setComment("")
-      await loadComments()
-    } catch (error) {
-      console.error("Error creating comment:", error)
+      loadComments()
     }
   }
 
@@ -191,19 +188,13 @@ const ViewPage = () => {
   // Format date
   const formatDate = (dateString: string) => {
     if (!dateString) return ""
-
-    try {
-      const date = new Date(dateString)
-      if (isNaN(date.getTime())) return ""
-
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    } catch (e) {
-      return ""
-    }
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return ""
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
   }
 
   if (loading) {
@@ -250,15 +241,7 @@ const ViewPage = () => {
           className="mb-8 flex items-center justify-between"
         >
           <div className="flex items-center space-x-3">
-            <img
-              src={page.author.avatar || "/placeholder.svg"}
-              alt={page.author.username}
-              className="h-10 w-10 rounded-full object-cover"
-              onError={(e) => {
-                ;(e.target as HTMLImageElement).src =
-                  `https://ui-avatars.com/api/?name=${page.author.username}&background=random`
-              }}
-            />
+            <Avatar src={page.author.avatar} username={page.author.username} size={40} />
             <div>
               <p className="font-medium">{page.author.username}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">{formatDate(page.createdAt)}</p>
@@ -289,15 +272,13 @@ const ViewPage = () => {
                 src={page.previewImage || "/placeholder.svg"}
                 alt={page.title}
                 className="max-h-80 rounded-lg object-contain shadow"
-                onError={(e) => {
-                  ;(e.target as HTMLImageElement).style.display = "none"
-                }}
               />
             </div>
           )}
           <h1
             className="mb-6 text-center text-4xl font-bold"
             style={{
+              // Optionnel : couleur différente en dark mode
               color: document.documentElement.classList.contains("dark") ? "#fff" : page.primaryColor,
             }}
           >
@@ -337,53 +318,41 @@ const ViewPage = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-8 rounded-xl bg-white p-6 shadow-md dark:bg-gray-800"
         >
-          <h2 className="mb-4 flex items-center text-xl font-semibold">
-            <MessageSquare className="mr-2" size={20} />
-            Messages ({comments ? comments.length : 0})
-          </h2>
-
           <form onSubmit={handleCommentSubmit} className="mb-6">
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Leave a message..."
-              className="mb-2 w-full rounded-md border border-gray-300 p-2 dark:border-gray-700 dark:bg-gray-800"
+              className="textarea mb-2 w-full"
               rows={3}
             ></textarea>
-            <Button type="submit" variant="primary" disabled={!comment.trim()}>
+            <Button
+              type="submit"
+              variant="primary"
+              // disabled={!comment.trim()}
+            >
               Post Message
             </Button>
           </form>
+          <h2 className="mb-4 flex items-center text-xl font-semibold">
+            <MessageSquare className="mr-2" size={20} />
+            Messages ({comments ? comments.length : 0})
+          </h2>
 
           <div className="space-y-4">
             {comments &&
               comments.map((comment: any) => (
                 <div key={comment.id} className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
                   <div className="mb-2 flex items-center space-x-2">
-                    <img
-                      src={
-                        comment.user?.avatar ||
-                        `https://ui-avatars.com/api/?name=${comment.user?.username || "Anonymous"}&background=random`
-                      }
-                      alt={comment.user?.username || "Anonymous"}
-                      className="h-8 w-8 rounded-full object-cover"
-                      onError={(e) => {
-                        ;(e.target as HTMLImageElement).src =
-                          `https://ui-avatars.com/api/?name=${comment.user?.username || "Anonymous"}&background=random`
-                      }}
-                    />
-                    <span className="font-medium">{comment.user?.username || "Anonymous"}</span>
+                    <Avatar src={comment.user?.avatar} username={comment.user?.username || comment.author} size={32} />
+                    <span className="font-medium">{comment.user?.username || comment.author}</span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {formatDate(comment.created_at || "")}
+                      {formatDate(comment.createdAt || comment.created_at || "")}
                     </span>
                   </div>
                   <p>{comment.content}</p>
                 </div>
               ))}
-
-            {comments.length === 0 && (
-              <div className="text-center py-8 text-gray-500">No messages yet. Be the first to leave a message!</div>
-            )}
           </div>
         </motion.div>
       </div>
