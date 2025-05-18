@@ -52,6 +52,7 @@ function App() {
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="create" element={<CreatePage />} />
+            <Route path="edit/:id" element={<CreatePage />} />
             <Route path="dashboard" element={<DashboardPage />} />
           </Route>
           
