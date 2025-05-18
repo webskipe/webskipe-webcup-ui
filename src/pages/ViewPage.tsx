@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import ReactConfetti from 'react-confetti';
-import { Heart, Share2, MessageSquare, Copy, Check } from 'lucide-react';
-import Button from '../components/ui/Button';
-import axiosInstance from '../services/axiosInstance';
-import { createComment, filterCommentsByPage, incrementPageViews } from '../services/pageService';
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { useParams } from "react-router-dom"
+import { motion } from "framer-motion"
+import ReactConfetti from "react-confetti"
+import { Heart, Share2, MessageSquare, Copy, Check } from "lucide-react"
+import Button from "../components/ui/Button"
+import axiosInstance from "../services/axiosInstance"
+import { createComment, filterCommentsByPage, incrementPageViews } from "../services/pageService"
 import DramaticBackground from "../components/backgrounds/dramatic-background"
 import ProfessionalBackground from "../components/backgrounds/professional-background"
 import HumorousBackground from "../components/backgrounds/humorous-background"
@@ -15,72 +19,71 @@ import EmotionalBackground from "../components/backgrounds/emotional-background"
 import PoeticBackground from "../components/backgrounds/poetic-background"
 import ReflectiveBackground from "../components/backgrounds/reflective-background"
 
-
 const ViewPage = () => {
-  const { id } = useParams<{ id: string }>(); // id est le slug de la page
-  const [page, setPage] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [showConfetti, setShowConfetti] = useState(true);
-  const [reaction, setReaction] = useState<string | null>(null);
-  const [comment, setComment] = useState<any>(null);
-  const [linkCopied, setLinkCopied] = useState(false);
+  const { id } = useParams<{ id: string }>() // id is the page slug
+  const [page, setPage] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [showConfetti, setShowConfetti] = useState(true)
+  const [reaction, setReaction] = useState<string | null>(null)
+  const [comment, setComment] = useState<string>("")
+  const [linkCopied, setLinkCopied] = useState(false)
   const [windowDimensions, setWindowDimensions] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
-  });
-
+  })
+  const [comments, setComments] = useState<any[]>([])
 
   const renderBackground = () => {
     switch (page?.tone) {
       case "dramatic":
-        return <DramaticBackground />;
+        return <DramaticBackground />
       case "professional":
-        return <ProfessionalBackground />;
+        return <ProfessionalBackground />
       case "humorous":
-        return <HumorousBackground />;
+        return <HumorousBackground />
       case "grateful":
-        return <GratefulBackground />;
+        return <GratefulBackground />
       case "celebratory":
-        return <CelebratoryBackground />;
+        return <CelebratoryBackground />
       case "emotional":
-        return <EmotionalBackground />;
+        return <EmotionalBackground />
       case "poetic":
-        return <PoeticBackground />;
+        return <PoeticBackground />
       case "reflective":
-        return <ReflectiveBackground />;
+        return <ReflectiveBackground />
       default:
-        return <DramaticBackground />;
+        return <DramaticBackground />
     }
   }
 
-  const [comments, setComments] = useState<any[]>([]);
   // Fetch page data from API
   useEffect(() => {
     const fetchPage = async () => {
-      setLoading(true);
+      if (!id) return
+
+      setLoading(true)
       try {
-        const res = await axiosInstance.get('/pages/');
-        const results = res.data.results || [];
-        const data = results.find((p: any) => String(p.slug) === String(id));
-        if (!data) {
-          setPage(null);
+        const res = await axiosInstance.get(`/pages/${id}/`)
+        if (!res.data) {
+          setPage(null)
         } else {
+          const data = res.data
           setPage({
             id: data.id,
             slug: data.slug,
             title: data.title,
-            message: data.message || '',
+            message: data.message || "",
             tone: data.tone,
             template: data.template,
-            primaryColor: data.primary_color || '#6D28D9',
-            backgroundColor: data.background_color || '#f8f9fa',
-            previewImage: data.previewImage,
+            primaryColor: data.primary_color || "#6D28D9",
+            backgroundColor: data.background_color || "#f8f9fa",
+            previewImage: data.preview_image || "",
             author: {
-              id: data.user.id,
-              username: data.user.username,
-              avatar: data.user.avatar
-                ? data.user.avatar
-                : `https://webskipe.madagascar.webcup.hodi.host/pages/${data.user.username}`,
+              id: data.user?.id,
+              username: data.user?.username || "Anonymous",
+              avatar:
+                data.user?.avatar ||
+                `https://ui-avatars.com/api/?name=${data.user?.username || "Anonymous"}&background=random`,
             },
             createdAt: data.created_at,
             reactions: {
@@ -88,113 +91,120 @@ const ViewPage = () => {
               likes: 0,
               claps: 0,
             },
-            comments: [], // À remplir si tu as les commentaires
-          });
+            comments: [], // Will be filled separately
+          })
+
+          // Increment page views
+          incrementPageViews(id).catch(console.error)
         }
       } catch (e) {
-        setPage(null);
+        console.error("Error fetching page:", e)
+        setPage(null)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    fetchPage();
-  }, [id]);
+    }
+
+    fetchPage()
+  }, [id])
 
   const loadComments = async () => {
-    filterCommentsByPage(page.id).then((res) => {
-      console.log('Comments filtrés:', res);
-      setComments(res);
-    });
+    if (!page?.id) return
+
+    try {
+      const comments = await filterCommentsByPage(page.id)
+      setComments(Array.isArray(comments) ? comments : [])
+    } catch (error) {
+      console.error("Error loading comments:", error)
+      setComments([])
+    }
   }
 
-
-
   useEffect(() => {
-    if (!page?.id) return;
-    console.log('page.id:', page.id, 'typeof:', typeof page.id);
-    loadComments();
-    // setComment(res.results[0]);
-  }, [page?.id]);
+    if (!page?.id) return
+    loadComments()
+  }, [page?.id])
+
   // Update window dimensions when resized
   useEffect(() => {
-    incrementPageViews(id!).then((res) => {
-      console.log('Page vues incrémentées:', res);
-    });
     const handleResize = () => {
       setWindowDimensions({
         width: window.innerWidth,
         height: window.innerHeight,
-      });
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+      })
+    }
+
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
 
   // Stop confetti after 5 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
-      setShowConfetti(false);
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, []);
+      setShowConfetti(false)
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Reset "copied" status after 2 seconds
   useEffect(() => {
     if (linkCopied) {
       const timer = setTimeout(() => {
-        setLinkCopied(false);
-      }, 2000);
-      return () => clearTimeout(timer);
+        setLinkCopied(false)
+      }, 2000)
+      return () => clearTimeout(timer)
     }
-  }, [linkCopied]);
+  }, [linkCopied])
 
   // Handle reaction
   const handleReaction = (type: string) => {
-    setReaction(type);
+    setReaction(type)
     // In a real app, send to API
-  };
+  }
 
   // Handle comment submission
   const handleCommentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (comment.trim()) {
-      // const newComment = {
-      //   id: Date.now(),
-      //   author: 'You',
-      //   avatar: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg',
-      //   content: comment,
-      //   createdAt: new Date().toISOString(),
-      // };
-      const formData = new FormData();
-      formData.append('page', page.id);
-      formData.append('content', comment);
-      createComment(formData).then((res) => {
-        console.log('Comment créé:', res);
-        setComment(null);
-      });
-      setComment('');
-      loadComments();
+    e.preventDefault()
+
+    if (!comment.trim() || !page?.id) return
+
+    try {
+      const formData = new FormData()
+      formData.append("page", page.id)
+      formData.append("content", comment)
+
+      await createComment(formData)
+      setComment("")
+      await loadComments()
+    } catch (error) {
+      console.error("Error creating comment:", error)
     }
-  };
+  }
 
   // Handle copy link
   const handleCopyLink = () => {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url);
-    setLinkCopied(true);
-  };
+    const url = window.location.href
+    navigator.clipboard.writeText(url)
+    setLinkCopied(true)
+  }
 
   // Format date
   const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '';
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
+    if (!dateString) return ""
+
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return ""
+
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    } catch (e) {
+      return ""
+    }
+  }
 
   if (loading) {
     return (
@@ -203,7 +213,7 @@ const ViewPage = () => {
           <h2 className="text-2xl font-bold">Loading...</h2>
         </div>
       </div>
-    );
+    )
   }
 
   if (!page) {
@@ -216,7 +226,7 @@ const ViewPage = () => {
           </p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -228,7 +238,7 @@ const ViewPage = () => {
           height={windowDimensions.height}
           recycle={false}
           numberOfPieces={200}
-          colors={['#6D28D9', '#EC4899', '#0D9488', '#F97316', '#10B981']}
+          colors={["#6D28D9", "#EC4899", "#0D9488", "#F97316", "#10B981"]}
         />
       )}
 
@@ -241,15 +251,17 @@ const ViewPage = () => {
         >
           <div className="flex items-center space-x-3">
             <img
-              src={page.author.avatar}
+              src={page.author.avatar || "/placeholder.svg"}
               alt={page.author.username}
               className="h-10 w-10 rounded-full object-cover"
+              onError={(e) => {
+                ;(e.target as HTMLImageElement).src =
+                  `https://ui-avatars.com/api/?name=${page.author.username}&background=random`
+              }}
             />
             <div>
               <p className="font-medium">{page.author.username}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {formatDate(page.createdAt)}
-              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{formatDate(page.createdAt)}</p>
             </div>
           </div>
 
@@ -258,7 +270,7 @@ const ViewPage = () => {
             onClick={handleCopyLink}
             icon={linkCopied ? <Check size={16} /> : <Copy size={16} />}
           >
-            {linkCopied ? 'Copied!' : 'Copy Link'}
+            {linkCopied ? "Copied!" : "Copy Link"}
           </Button>
         </motion.div>
 
@@ -274,43 +286,42 @@ const ViewPage = () => {
           {page.previewImage && (
             <div className="mb-6 flex justify-center">
               <img
-                src={page.previewImage}
+                src={page.previewImage || "/placeholder.svg"}
                 alt={page.title}
                 className="max-h-80 rounded-lg object-contain shadow"
+                onError={(e) => {
+                  ;(e.target as HTMLImageElement).style.display = "none"
+                }}
               />
             </div>
           )}
           <h1
             className="mb-6 text-center text-4xl font-bold"
             style={{
-              // Optionnel : couleur différente en dark mode
-              color: document.documentElement.classList.contains('dark')
-                ? '#fff'
-                : page.primaryColor,
+              color: document.documentElement.classList.contains("dark") ? "#fff" : page.primaryColor,
             }}
           >
             {page.title}
           </h1>
 
-          <div className="mb-8 whitespace-pre-line text-lg leading-relaxed">
-            {page.message}
-          </div>
+          <div className="mb-8 whitespace-pre-line text-lg leading-relaxed">{page.message}</div>
 
           {/* Reactions */}
           <div className="mb-8 flex justify-center space-x-4">
             <button
-              onClick={() => handleReaction('heart')}
-              className={`flex items-center space-x-1 rounded-full px-4 py-2 transition-colors ${reaction === 'heart'
-                ? 'bg-accent-100 text-accent-500 dark:bg-accent-900/30'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
+              onClick={() => handleReaction("heart")}
+              className={`flex items-center space-x-1 rounded-full px-4 py-2 transition-colors ${
+                reaction === "heart"
+                  ? "bg-accent-100 text-accent-500 dark:bg-accent-900/30"
+                  : "hover:bg-gray-100 dark:hover:bg-gray-700"
+              }`}
             >
-              <Heart className={reaction === 'heart' ? 'fill-accent-500 text-accent-500' : ''} size={20} />
+              <Heart className={reaction === "heart" ? "fill-accent-500 text-accent-500" : ""} size={20} />
               <span>{page.reactions.hearts}</span>
             </button>
 
             <button
-              onClick={() => handleReaction('share')}
+              onClick={() => handleReaction("share")}
               className={`flex items-center space-x-1 rounded-full px-4 py-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700`}
             >
               <Share2 size={20} />
@@ -326,57 +337,58 @@ const ViewPage = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-8 rounded-xl bg-white p-6 shadow-md dark:bg-gray-800"
         >
-
-          <form onSubmit={handleCommentSubmit} className="mb-6">
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Leave a message..."
-              className="textarea mb-2 w-full"
-              rows={3}
-            ></textarea>
-            <Button
-              type="submit"
-              variant="primary"
-            // disabled={!comment.trim()}
-            >
-              Post Message
-            </Button>
-          </form>
           <h2 className="mb-4 flex items-center text-xl font-semibold">
             <MessageSquare className="mr-2" size={20} />
             Messages ({comments ? comments.length : 0})
           </h2>
 
           <form onSubmit={handleCommentSubmit} className="mb-6">
-            {/* ... */}
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Leave a message..."
+              className="mb-2 w-full rounded-md border border-gray-300 p-2 dark:border-gray-700 dark:bg-gray-800"
+              rows={3}
+            ></textarea>
+            <Button type="submit" variant="primary" disabled={!comment.trim()}>
+              Post Message
+            </Button>
           </form>
 
           <div className="space-y-4">
-            {comments && comments.map((comment: any) => (
-              <div
-                key={comment.id}
-                className="rounded-lg border border-gray-200 p-4 dark:border-gray-700"
-              >
-                <div className="mb-2 flex items-center space-x-2">
-                  <img
-                    src={comment.user.avatar}
-                    alt={comment.user.username}
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
-                  <span className="font-medium">{comment.author}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {formatDate(comment.createdAt || comment.created_at || '')}
-                  </span>
+            {comments &&
+              comments.map((comment: any) => (
+                <div key={comment.id} className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                  <div className="mb-2 flex items-center space-x-2">
+                    <img
+                      src={
+                        comment.user?.avatar ||
+                        `https://ui-avatars.com/api/?name=${comment.user?.username || "Anonymous"}&background=random`
+                      }
+                      alt={comment.user?.username || "Anonymous"}
+                      className="h-8 w-8 rounded-full object-cover"
+                      onError={(e) => {
+                        ;(e.target as HTMLImageElement).src =
+                          `https://ui-avatars.com/api/?name=${comment.user?.username || "Anonymous"}&background=random`
+                      }}
+                    />
+                    <span className="font-medium">{comment.user?.username || "Anonymous"}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {formatDate(comment.created_at || "")}
+                    </span>
+                  </div>
+                  <p>{comment.content}</p>
                 </div>
-                <p>{comment.content}</p>
-              </div>
-            ))}
+              ))}
+
+            {comments.length === 0 && (
+              <div className="text-center py-8 text-gray-500">No messages yet. Be the first to leave a message!</div>
+            )}
           </div>
         </motion.div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ViewPage;
+export default ViewPage
