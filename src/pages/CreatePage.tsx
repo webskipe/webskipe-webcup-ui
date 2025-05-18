@@ -8,6 +8,7 @@ import { createPage, fetchOnePage } from '../services/pageService';
 import axiosInstance from '../services/axiosInstance';
 
 
+
 // Step interfaces
 interface ToneSelection {
   tone: string;
@@ -37,31 +38,31 @@ const CreatePage = () => {
   const { id } = useParams<{ id: string | undefined }>();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Form data for each step
   const [toneData, setToneData] = useState<ToneSelection>({
     tone: '',
     context: '',
   });
-  
+
   const [contentData, setContentData] = useState<ContentCreation>({
     title: '',
     message: '',
     media: [],
   });
-  
+
   const [templateData, setTemplateData] = useState<TemplateSelection>({
     templateId: '',
     primaryColor: '#6D28D9',
     backgroundColor: '#ffffff',
   });
-  
+
   const [privacyData, setPrivacyData] = useState<PrivacySettings>({
     privacy: 'public',
     customUrl: '',
     expiryDate: '',
   });
-  
+
   // Handle next step
   const handleNext = () => {
     if (currentStep < 4) {
@@ -69,7 +70,7 @@ const CreatePage = () => {
       window.scrollTo(0, 0);
     }
   };
-  
+
   // Handle previous step
   const handlePrevious = () => {
     if (currentStep > 1) {
@@ -77,69 +78,71 @@ const CreatePage = () => {
       window.scrollTo(0, 0);
     }
   };
-  
+
   // Handle submit
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    
-     try {
-    const formData = new FormData();
-    formData.append('tone', toneData.tone);
-    formData.append('context', toneData.context);
-    formData.append('title', contentData.title);
-    formData.append('message', contentData.message);
-    formData.append('template', templateData.templateId);
-    formData.append('primary_color', templateData.primaryColor);
-    formData.append('background_color', templateData.backgroundColor);
-    formData.append('privacy', privacyData.privacy);
-    formData.append('expiry_date', privacyData.expiryDate);
-    formData.append('status', "published");
 
-    // Ajoute les fichiers médias
-    contentData.media.forEach((file) => {
-      formData.append('media', file);
+    try {
+      const formData = new FormData();
+      formData.append('tone', toneData.tone);
+      formData.append('context', toneData.context);
+      formData.append('title', contentData.title);
+      formData.append('message', contentData.message);
+      formData.append('template', templateData.templateId);
+      formData.append('primary_color', templateData.primaryColor);
+      formData.append('background_color', templateData.backgroundColor);
+      formData.append('privacy', privacyData.privacy);
+      formData.append('expiry_date', privacyData.expiryDate);
+      formData.append('status', "published");
+
+      // Ajoute les fichiers médias
+      contentData.media.forEach((file) => {
+        formData.append('media', file);
+      });
+
+      // Appel API pour créer la page
+      const createdPage = await createPage(formData);
+      console.log('createdPage:', createdPage);
+      const slug = createdPage.slug;
+      console.log('Slug:', slug);
+
+      for (const file of contentData.media) {
+        if (file.type.startsWith('image/')) {
+          const mediaForm = new FormData();
+          mediaForm.append('file', file);
+          const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+          mediaForm.append('file_type', ext);
+
+          await axiosInstance.post(
+            `/pages/${slug}/upload_media/`,
+            mediaForm
+          );
+        }
+      }
+
+      // Redirige vers la page créée (adapte selon ta route)
+      alert('Page created successfully!');
+      navigate(`./dashboard`);
+
+    } catch (error) {
+      console.error('Error creating page:', error);
+      setIsSubmitting(false);
+    }
+  };
+
+  // const [dataEdit, setDataEdit] = useState<UserPage | null>(null);
+  if (id) {
+    fetchOnePage(id).then((res) => {
+      const data = res.data;
+      console.log('data', data);
+      setToneData({ tone: data.tone, context: data.message });
+      setContentData({ title: data.title, message: data.message, media: data.media });
+      setTemplateData({ templateId: data.template, primaryColor: data.primary_color, backgroundColor: data.background_color });
+      setPrivacyData({ privacy: data.privacy, customUrl: data.slug, expiryDate: data.expiry_date });
     });
-
-    // Appel API pour créer la page
-    const createdPage = await createPage(formData);
-    console.log('createdPage:', createdPage);
-    const slug = createdPage.slug;
-    console.log('Slug:', slug);
-
-for (const file of contentData.media) {
-  if (file.type.startsWith('image/')) {
-    const mediaForm = new FormData();
-    mediaForm.append('file', file);
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-    mediaForm.append('file_type', ext);
-
-    await axiosInstance.post(
-      `/pages/${slug}/upload_media/`,
-      mediaForm
-    );
   }
-}
 
-    // Redirige vers la page créée (adapte selon ta route)
-    navigate(`./ViewPage/${createdPage.slug}`);
-  } catch (error) {
-    console.error('Error creating page:', error);
-    setIsSubmitting(false);
-  }
-};
-
-// const [dataEdit, setDataEdit] = useState<UserPage | null>(null);
-if (id) {
-  fetchOnePage(id).then((res) => {
-  const data = res.data;
-  console.log('data', data);
-  setToneData({tone: data.tone, context: data.message});
-  setContentData({title: data.title, message: data.message, media: data.media});
-  setTemplateData({templateId: data.template, primaryColor: data.primary_color, backgroundColor: data.background_color});
-  setPrivacyData({privacy: data.privacy, customUrl: data.slug, expiryDate: data.expiry_date});
-  });
-}
-  
   // Render step indicators
   const renderStepIndicators = () => {
     return (
@@ -150,23 +153,21 @@ if (id) {
             className="flex items-center"
           >
             <div
-              className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-                step === currentStep
-                  ? 'bg-primary-600 text-white'
-                  : step < currentStep
+              className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${step === currentStep
+                ? 'bg-primary-600 text-white'
+                : step < currentStep
                   ? 'bg-primary-200 text-primary-800 dark:bg-primary-800 dark:text-primary-200'
                   : 'bg-gray-200 text-gray-500 dark:bg-gray-700'
-              }`}
+                }`}
             >
               {step}
             </div>
             {step < 4 && (
               <div
-                className={`h-1 w-10 ${
-                  step < currentStep
-                    ? 'bg-primary-200 dark:bg-primary-800'
-                    : 'bg-gray-200 dark:bg-gray-700'
-                }`}
+                className={`h-1 w-10 ${step < currentStep
+                  ? 'bg-primary-200 dark:bg-primary-800'
+                  : 'bg-gray-200 dark:bg-gray-700'
+                  }`}
               ></div>
             )}
           </div>
@@ -174,7 +175,7 @@ if (id) {
       </div>
     );
   };
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>): void {
@@ -202,9 +203,9 @@ if (id) {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-12">
       <h1 className="mb-6 text-center">Create Your Farewell Page</h1>
-      
+
       {renderStepIndicators()}
-      
+
       <motion.div
         key={currentStep}
         initial={{ opacity: 0, x: 20 }}
@@ -220,7 +221,7 @@ if (id) {
             <p className="mb-6 text-gray-600 dark:text-gray-400">
               Select the emotional tone that best fits your farewell.
             </p>
-            
+
             <div className="mb-6">
               <label className="mb-2 block font-medium">Tone</label>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -228,18 +229,17 @@ if (id) {
                   <div
                     key={option.value}
                     onClick={() => setToneData({ ...toneData, tone: option.value })}
-                    className={`cursor-pointer rounded-lg border p-4 text-center transition-colors hover:border-primary-300 dark:hover:border-primary-600 ${
-                      toneData.tone === option.value
-                        ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/30'
-                        : 'border-gray-200 dark:border-gray-700'
-                    }`}
+                    className={`cursor-pointer rounded-lg border p-4 text-center transition-colors hover:border-primary-300 dark:hover:border-primary-600 ${toneData.tone === option.value
+                      ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/30'
+                      : 'border-gray-200 dark:border-gray-700'
+                      }`}
                   >
                     <span>{option.label}</span>
                   </div>
                 ))}
               </div>
             </div>
-            
+
             <div className="mb-6">
               <label htmlFor="context" className="mb-2 block font-medium">
                 What are you saying goodbye to?
@@ -255,7 +255,7 @@ if (id) {
             </div>
           </div>
         )}
-        
+
         {/* Step 2: Content Creation */}
         {currentStep === 2 && (
           <div>
@@ -263,7 +263,7 @@ if (id) {
             <p className="mb-6 text-gray-600 dark:text-gray-400">
               Express yourself with words and media.
             </p>
-            
+
             <div className="mb-6">
               <label htmlFor="title" className="mb-2 block font-medium">
                 Title
@@ -277,7 +277,7 @@ if (id) {
                 onChange={(e) => setContentData({ ...contentData, title: e.target.value })}
               />
             </div>
-            
+
             <div className="mb-6">
               <label htmlFor="message" className="mb-2 block font-medium">
                 Your Message
@@ -291,7 +291,7 @@ if (id) {
                 onChange={(e) => setContentData({ ...contentData, message: e.target.value })}
               ></textarea>
             </div>
-            
+
             <div>
               <label className="mb-2 block font-medium">
                 Add Media (optional)
@@ -321,7 +321,7 @@ if (id) {
                       browse
                     </button>
                   </p>
-                  
+
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Supports images, GIFs, and videos (max 10MB)
                   </p>
@@ -345,7 +345,7 @@ if (id) {
             </div>
           </div>
         )}
-        
+
         {/* Step 3: Template Selection */}
         {currentStep === 3 && (
           <div>
@@ -353,17 +353,16 @@ if (id) {
             <p className="mb-6 text-gray-600 dark:text-gray-400">
               Select a design template for your farewell page.
             </p>
-            
+
             <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
               {TEMPLATES.map((template) => (
                 <div
                   key={template.id}
                   onClick={() => setTemplateData({ ...templateData, templateId: template.id })}
-                  className={`cursor-pointer overflow-hidden rounded-lg border-2 transition-colors hover:border-primary-300 dark:hover:border-primary-600 ${
-                    templateData.templateId === template.id
-                      ? 'border-primary-500 dark:border-primary-400'
-                      : 'border-gray-200 dark:border-gray-700'
-                  }`}
+                  className={`cursor-pointer overflow-hidden rounded-lg border-2 transition-colors hover:border-primary-300 dark:hover:border-primary-600 ${templateData.templateId === template.id
+                    ? 'border-primary-500 dark:border-primary-400'
+                    : 'border-gray-200 dark:border-gray-700'
+                    }`}
                 >
                   <img
                     src={template.previewImage}
@@ -379,7 +378,7 @@ if (id) {
                 </div>
               ))}
             </div>
-            
+
             <div className="mb-6">
               <label className="mb-2 block font-medium">
                 Customize Colors
@@ -413,7 +412,7 @@ if (id) {
             </div>
           </div>
         )}
-        
+
         {/* Step 4: Privacy Settings */}
         {currentStep === 4 && (
           <div>
@@ -421,7 +420,7 @@ if (id) {
             <p className="mb-6 text-gray-600 dark:text-gray-400">
               Control who can see your farewell page and how it's shared.
             </p>
-            
+
             <div className="mb-6">
               <label className="mb-2 block font-medium">
                 Privacy Level
@@ -431,17 +430,16 @@ if (id) {
                   <div
                     key={option.value}
                     onClick={() => setPrivacyData({ ...privacyData, privacy: option.value })}
-                    className={`cursor-pointer rounded-lg border p-4 transition-colors hover:border-primary-300 dark:hover:border-primary-600 ${
-                      privacyData.privacy === option.value
-                        ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/30'
-                        : 'border-gray-200 dark:border-gray-700'
-                    }`}
+                    className={`cursor-pointer rounded-lg border p-4 transition-colors hover:border-primary-300 dark:hover:border-primary-600 ${privacyData.privacy === option.value
+                      ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/30'
+                      : 'border-gray-200 dark:border-gray-700'
+                      }`}
                   >
                     <div className="flex items-center">
                       <input
                         type="radio"
                         checked={privacyData.privacy === option.value}
-                        onChange={() => {}}
+                        onChange={() => { }}
                         className="h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-500"
                       />
                       <label className="ml-3">
@@ -452,7 +450,7 @@ if (id) {
                 ))}
               </div>
             </div>
-            
+
             <div className="mb-6">
               <label htmlFor="customUrl" className="mb-2 block font-medium">
                 Custom URL (optional)
@@ -474,7 +472,7 @@ if (id) {
                 Only letters, numbers, and hyphens are allowed.
               </p>
             </div>
-            
+
             <div>
               <label htmlFor="expiryDate" className="mb-2 block font-medium">
                 Page Expiry (optional)
@@ -493,7 +491,7 @@ if (id) {
           </div>
         )}
       </motion.div>
-      
+
       <div className="mt-6 flex justify-between">
         {currentStep > 1 ? (
           <Button
@@ -506,7 +504,7 @@ if (id) {
         ) : (
           <div></div>
         )}
-        
+
         {currentStep < 4 ? (
           <Button
             variant="primary"
