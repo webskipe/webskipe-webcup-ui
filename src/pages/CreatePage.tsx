@@ -123,7 +123,7 @@ const CreatePage = () => {
 
       // Redirige vers la page créée (adapte selon ta route)
       alert('Page created successfully!');
-      navigate(`./dashboard`);
+      navigate('/dashboard', { replace: true })
 
     } catch (error) {
       console.error('Error creating page:', error);
